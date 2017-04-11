@@ -1,0 +1,16 @@
+{
+  "extends": "../../../tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "rootDir": ".",
+    "paths": {
+      "jellybeans": [
+        "jellybeans/*"
+      ]
+    },
+    "outDir": "../../../target/test"
+  },
+  "include": [
+    "**/*.ts"
+  ]
+}

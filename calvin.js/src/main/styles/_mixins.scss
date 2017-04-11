@@ -1,0 +1,24 @@
+@mixin page-format($formatName, $portraitWidth, $portraitHeight) {
+  paper-report[format="#{$formatName}"] {
+    &[orientation="portrait"] {
+      report-page {
+        width: $portraitWidth;
+        height: $portraitHeight;
+      }
+      report-page[orientation="landscape"] {
+        height: $portraitWidth;
+        width: $portraitHeight;
+      }
+    }
+    &[orientation="landscape"] {
+      report-page[orientation="portrait"] {
+        width: $portraitWidth;
+        height: $portraitHeight;
+      }
+      report-page {
+        height: $portraitWidth;
+        width: $portraitHeight;
+      }
+    }
+  }
+}

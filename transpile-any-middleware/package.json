@@ -1,0 +1,26 @@
+{
+    "name": "transpile-any-middleware",
+    "version": "1.0.11",
+    "description": "A generic unopinionated middleware for invoking compilers or transpilers like TypeScript or Babel",
+    "main": "middleware.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "author": "Gianluca Romeo <glromeo@gmail.com> (https://github.com/glromeo/codebite.org/tanspile-any-middleware)",
+    "homepage": "https://github.com/glromeo/codebite.org/tanspile-any-middleware",
+    "repository": {
+        "type": "git",
+        "url": "git://github.com/glromeo/codebite.org/tanspile-any-middleware.git"
+    },
+    "license": "MIT",
+    "engines": {
+        "node": ">=0.10.0"
+    },
+    "devDependencies": {
+        "express": "^4.14.0"
+    },
+    "dependencies": {
+        "bluebird": "^3.5.0",
+        "fs-promise": "^2.0.0"
+    }
+}

@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="shortcut icon" href="images/cobra.png">
+    <link rel="stylesheet" href="/styles/main.css" media="screen,print">
+    <style type="text/css">
+    </style>
+    <script src="globals.js"></script>
+    <script type="text/javascript">
+        let createElement = document.createElement;
+
+        document.createElement = function () {
+            console.log("document.createElement", this, arguments);
+            return createElement.apply(document, arguments);
+        }
+    </script>
+</head>
+<body>
+<template id="report-template">
+    <!-- {{console.log("Hey!!!")}} -->
+    <paper-report format="A4" orientation="landscape">
+        <report-page title="Title Page">
+            <page-header style="background-color: red">
+                <div>First</div>
+                <div>{{page.title}}</div>
+                <div></div>
+            </page-header>
+            <page-body style="background-color: white">
+                Italia
+            </page-body>
+            <page-footer style="background-color: green">
+                <div></div>
+                <div>Bottom</div>
+                <div>pg. {{page.number}}</div>
+            </page-footer>
+        </report-page>
+        <report-page title="Second Page Template" for-each="page in pages">
+            <page-header style="background-color: red">
+                <div>First</div>
+                <div>{{page.title}}</div>
+                <div></div>
+            </page-header>
+            <page-body style="background-color: white">
+                France
+            </page-body>
+            <page-footer style="background-color: blue">
+                <div></div>
+                <div>Bottom</div>
+                <div>pg. {{page.number}}</div>
+            </page-footer>
+        </report-page>
+    </paper-report>
+</template>
+<script src="/node_modules/bluebird/js/browser/bluebird.min.js"></script>
+<script src="/node_modules/systemjs/dist/system.js"></script>
+<script src="/node_modules/webcomponents.js/webcomponents-lite.min.js"></script>
+<script src="/node_modules/custom-attributes/attr.js" defer></script>
+<script src="config.js"></script>
+<script type="text/javascript">
+
+    window.addEventListener('WebComponentsReady', function (e) {
+
+        console.log('components ready');
+
+        SystemJS.import('calvin:module').then(function (elements) {
+
+            elements.bootstrap();
+
+            let template = document.querySelector('#report-template');
+            let instance = document.importNode(template.content, true);
+            document.querySelector('body').appendChild(instance);
+
+            console.info("bootstrap done");
+            if (typeof require !== "function") {
+                console.log("require is not a function")
+                return;
+            }
+
+            const {remote, ipcRenderer} = require('electron');
+
+            module.paths.push(remote.app.getAppPath() + '/node_modules');
+
+            window.$ = window.jQuery = require('jquery');
+
+            setTimeout(function () {
+                console.log("sending printToPDF message");
+                ipcRenderer.send("printToPDF", {
+                    fileName: "work/output.pdf", pageSize: {
+                        width: 297000,
+                        height: 210000
+                    }
+                });
+            }, 2500);
+
+        }, console.error.bind(console));
+    });
+</script>
+</body>
+</html>

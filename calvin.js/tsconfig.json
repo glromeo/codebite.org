@@ -1,0 +1,28 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "bluebird": [
+        "src/types/bluebird/promise.d.ts"
+      ]
+    },
+    "typeRoots": [
+      "src/types", "node_modules/@types"
+    ],
+    "sourceRoot": "/src/main/typescript",
+    "target": "es5",
+    "module": "system",
+    "moduleResolution": "node",
+    "sourceMap": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "noImplicitAny": false,
+    "removeComments": false,
+    "listFiles": false,
+    "traceResolution": false,
+    "watch": true
+  },
+  "exclude": [
+    "node_modules"
+  ]
+}
