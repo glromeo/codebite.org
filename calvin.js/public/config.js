@@ -2,12 +2,13 @@ System.config({
 
     baseURL: "/public",
     defaultJSExtensions: true,
-    transpiler: false,
+    transpiler: true,
     paths: {
         "npm:*": "@jspm/npm/*",
         "github:*": "@jspm/github/*",
-        "decorators:*": "/babel/decorators/*",
-        "calvin:*": "/babel/calvin/*"
+        "decorators/*": "/babel/decorators/*",
+        "calvin:*": "/babel/calvin/*",
+        "node_modules:*": "/node_modules/*"
     },
 
     meta: {
@@ -18,6 +19,7 @@ System.config({
     },
 
     map: {
+        "jexl": "node_modules:jexl/lib",
         "bluebird": "npm:bluebird@3.4.7",
         "calvin": "../target/lib/calvin",
         "github:jspm/nodelibs-assert@0.1.0": {

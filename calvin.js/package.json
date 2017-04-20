@@ -35,8 +35,7 @@
     "express": "^4.14.0",
     "fs-promise": "^2.0.0",
     "serve-index": "^1.8.0",
-    "transpile-any-middleware": "^1.0.0",
-    "webcomponents.js": "^0.7.24"
+    "transpile-any-middleware": "^1.0.0"
   },
   "jspm": {
     "directories": {

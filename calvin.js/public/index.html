@@ -7,20 +7,14 @@
     <style type="text/css">
     </style>
     <script src="globals.js"></script>
-    <script type="text/javascript">
-        let createElement = document.createElement;
-
-        document.createElement = function () {
-            console.log("document.createElement", this, arguments);
-            return createElement.apply(document, arguments);
-        }
-    </script>
+    <script src="lib/jquery/dist/jquery.min.js"></script>
+    <script src="lib/webcomponentsjs/webcomponents-lite.js"></script>
+    <!--<script src="/node_modules/custom-attributes/attr.js"></script>-->
 </head>
 <body>
 <template id="report-template">
-    <!-- {{console.log("Hey!!!")}} -->
     <paper-report format="A4" orientation="landscape">
-        <report-page title="Title Page">
+        <report-page id="p1" title="Title Page">
             <page-header style="background-color: red">
                 <div>First</div>
                 <div>{{page.title}}</div>
@@ -35,28 +29,34 @@
                 <div>pg. {{page.number}}</div>
             </page-footer>
         </report-page>
-        <report-page title="Second Page Template" for-each="page in pages">
-            <page-header style="background-color: red">
-                <div>First</div>
-                <div>{{page.title}}</div>
-                <div></div>
-            </page-header>
-            <page-body style="background-color: white">
-                France
-            </page-body>
-            <page-footer style="background-color: blue">
-                <div></div>
-                <div>Bottom</div>
-                <div>pg. {{page.number}}</div>
-            </page-footer>
-        </report-page>
+        <for-each item="page" in="report.chapters[0] union report.chapters[2]">
+            <!-- Comment -->
+            <report-page title="Second Page Template">
+                <page-header style="background-color: red">
+                    <div>First</div>
+                    <div>{{page.title}}</div>
+                    <div></div>
+                </page-header>
+                <page-body style="background-color: white">
+                    France
+                </page-body>
+                <page-footer style="background-color: blue">
+                    <div></div>
+                    <div>Bottom</div>
+                    <div>pg. {{page.number}}</div>
+                </page-footer>
+            </report-page>
+            <!-- Comment -->
+        </for-each>
     </paper-report>
 </template>
 <script src="/node_modules/bluebird/js/browser/bluebird.min.js"></script>
 <script src="/node_modules/systemjs/dist/system.js"></script>
-<script src="/node_modules/webcomponents.js/webcomponents-lite.min.js"></script>
-<script src="/node_modules/custom-attributes/attr.js" defer></script>
 <script src="config.js"></script>
+
+<script type="text/javascript">
+</script>
+
 <script type="text/javascript">
 
     window.addEventListener('WebComponentsReady', function (e) {
@@ -65,9 +65,13 @@
 
         SystemJS.import('calvin:module').then(function (elements) {
 
-            elements.bootstrap();
+            elements.bootstrap(document.querySelector('HTML'));
 
             let template = document.querySelector('#report-template');
+            if (!template) {
+                return;
+            }
+
             let instance = document.importNode(template.content, true);
             document.querySelector('body').appendChild(instance);
 
@@ -94,7 +98,9 @@
             }, 2500);
 
         }, console.error.bind(console));
+
     });
+
 </script>
 </body>
 </html>

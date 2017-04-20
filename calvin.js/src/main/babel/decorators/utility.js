@@ -14,3 +14,37 @@ export function camelCase(str) {
         return match.slice(1).toUpperCase();
     });
 };
+
+export function closest(name, fromNode, callback) {
+    do {
+        if (fromNode[name]) {
+            return callback ? callback(fromNode) : fromNode[name];
+        }
+        fromNode = fromNode.parentElement;
+
+    } while (fromNode);
+}
+
+export function visitTree(root, callback) {
+    if (!root) {
+        return;
+    }
+    for (let child = root.firstChild; child; child = child.nextSibling) {
+        let recurse = callback(child) !== false;
+        if (recurse) {
+            visitTree(child, callback);
+        }
+    }
+}
+
+export function appendCallback(target, methodName, callback) {
+    let delegate = target[methodName];
+    if (delegate) {
+        target[methodName] = function () {
+            delegate.call(this);
+            callback.call(this);
+        }
+    } else {
+        target[methodName] = callback;
+    }
+}
