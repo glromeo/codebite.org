@@ -38,7 +38,7 @@ app.use('/babel', transpileAnyMiddleware({
     force: true,
     transpiler: function (source, {req, file}) {
         console.log("user-agent:", req.headers['user-agent']);
-        console.log("compiling: ", file);
+        console.log("compiling:", file || req.path);
         return {
             code,
             map,

@@ -1,4 +1,4 @@
-import {dashCase} from "./utility";
+import {dashCase} from "calvin/utility";
 
 export function CustomElement(what, options) {
     if (typeof what === "string") {

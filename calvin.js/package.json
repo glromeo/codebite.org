@@ -4,47 +4,29 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "typescript": "node_modules/.bin/tsc -p src/main/typescript && tsc -p src/test/typescript",
     "babel": "node_modules/.bin/babel src/main/babel --out-dir target/lib --source-maps",
     "sass": "node_modules/.bin/node-sass --source-map true --output-style compressed src/main/styles/main.scss -o target/styles",
-    "selenium": "webdriver-manager start",
-    "start": "node index.js",
-    "protractor": "protractor src/test/e2e/config.js",
-    "e2e-test": "npm-run-all -p -r express selenium protractor"
+    "start": "node index.js"
   },
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@types/bluebird": "^3.0.36",
-    "@types/jquery": "^2.0.34",
-    "@types/systemjs": "^0.19.31",
     "babel-cli": "^6.24.0",
-    "babel-plugin-transform-decorators": "^6.24.1",
-    "babel-preset-env": "^1.3.2",
-    "jasmine": "^2.5.2",
-    "jspm": "^0.16.53",
-    "protractor": "^5.1.1",
-    "typescript": "^2.2.2"
-  },
-  "dependencies": {
-    "babel-plugin-transform-decorators": "^6.24.1",
     "babel-plugin-transform-decorators-legacy": "^1.3.4",
-    "bluebird": "^3.5.0",
-    "custom-attributes": "^1.1.2",
+    "babel-preset-env": "^1.3.2",
     "errorhandler": "^1.5.0",
     "express": "^4.14.0",
     "fs-promise": "^2.0.0",
+    "jasmine": "^2.5.3",
     "serve-index": "^1.8.0",
     "transpile-any-middleware": "^1.0.0"
   },
-  "jspm": {
-    "directories": {
-      "baseURL": "public",
-      "packages": "public/@jspm"
-    },
-    "dependencies": {
-      "bluebird": "npm:bluebird@^3.4.6"
-    },
-    "devDependencies": {}
+  "dependencies": {
+    "babel-core": "^6.24.1",
+    "bluebird": "^3.5.0",
+    "custom-attributes": "^1.1.2",
+    "jexl": "^1.1.4",
+    "node-sass-middleware": "^0.11.0",
+    "systemjs": "^0.20.12"
   }
 }

@@ -1,19 +1,19 @@
+import {appendCallback, closest, visitTree} from "calvin/utility";
 import {CustomElement} from "decorators/@CustomElement";
-import {Scope} from "decorators/@Scope";
-import {connected} from "decorators/@connected";
+import jexl from "jexl";
+import {createScope} from "./main";
 
-import {Jexl} from "jexl/Jexl";
-import {appendCallback, closest, visitTree} from "../decorators/utility";
+const debug = false;
 
 class PaperElement extends HTMLElement {
 
     constructor() {
         super();
-        console.debug("created new PaperItem:", this.tagName);
+        if (debug) console.debug("created new PaperItem:", this.tagName);
     }
 
     connectedCallback() {
-        console.log("connected:", this.tagName);
+        if (debug) console.debug("connected:", this.tagName);
 
         if (this.childrenReadyCallback) {
             let barrier = 0;
@@ -29,7 +29,7 @@ class PaperElement extends HTMLElement {
             visitTree(this, node => {
                 if (node.render) {
                     barrier++;
-                    console.debug("waiting for node:", node);
+                    if (debug) console.debug("waiting for node:", node);
                     appendCallback(node, "readyCallback", descendantReadyCallback);
                     return false;
                 }
@@ -53,11 +53,11 @@ class PaperElement extends HTMLElement {
     }
 
     disconnectedCallback() {
-        console.log("disconnected:", this.tagName);
+        if (debug) console.debug("disconnected:", this.tagName);
     }
 
     attributeChangedCallback(attrName, oldVal, newVal) {
-        console.log(this.tagName, "attribute changed", attrName, oldVal, newVal);
+        if (debug) console.debug(this.tagName, "attribute changed", attrName, oldVal, newVal);
     }
 }
 
@@ -71,7 +71,7 @@ class PaperReport extends PaperElement {
 
         super.connectedCallback();
 
-        this.$scope = closest("$scope", this).$new({
+        createScope(this, {
             report: {
                 chapters: [
                     [{pag: 1}, {pag: 2}, {pag: 3}],
@@ -86,8 +86,6 @@ class PaperReport extends PaperElement {
         console.log("all children are now ready");
     }
 }
-
-let jexl = new Jexl();
 
 @CustomElement
 class ReportPage extends PaperElement {
@@ -117,19 +115,29 @@ class PageFooter extends PaperElement {
     }
 }
 
-class VisitingProxyHandler {
+class VisitingHandler {
 
-    constructor(visited, set) {
+    constructor(visited) {
         this.visited = visited;
     }
 
+    set(target, property, value) {
+        return false;
+    }
+
     get(target, property) {
-        console.log("visit:", property);
+        if (this.visited.hasOwnProperty(property)) {
+            if (debug) console.debug("visited:", property);
+            return target[property];
+        }
         let value = target[property];
-        if (typeof value === 'object') {
-            return new Proxy(value, new VisitingProxyHandler(this.visited[property] = this.visited[property] || {}));
+        if (value && typeof value === "object") {
+            if (debug) console.debug("visiting:", property);
+            let visited = this.visited[property] = {};
+            return new Proxy(value, new VisitingHandler(visited));
         } else {
-            return this.visited[property] = value;
+            if (debug) console.debug("value:", property, value);
+            return value;
         }
     }
 }
@@ -158,14 +166,24 @@ class ForEach extends PaperElement {
         let fragment = document.createDocumentFragment();
         fragment.appendChild(placeholder);
 
-        let visited = {};
-
         jexl.addBinaryOp('union', 0, function (left, right) {
             return left.concat(right);
         });
 
+        let handler = new VisitingHandler({});
+        let context = new Proxy($scope, handler);
 
-        return jexl.eval(this.getAttribute("in"), new Proxy($scope, new VisitingProxyHandler(visited))).then((items) => {
+        let expression = this.getAttribute("in");
+
+        return jexl.eval(expression, context).then((items) => {
+            let visited = handler.visited;
+            this.replaceLeaves(visited, function (path, {to, from}) {
+                console.log("changed:", path, "(", to, "<-", from, ")");
+            });
+            console.log("visited:", visited);
+            $scope.$watch(visited);
+            return items;
+        }).then((items) => {
 
             if (Array.isArray(items)) {
                 items.forEach((item, index) => {
@@ -179,19 +197,31 @@ class ForEach extends PaperElement {
             fragment.appendChild(marker);
             this.parentNode.replaceChild(fragment, this);
 
-            console.log("visited:", JSON.stringify(visited, undefined, 2));
-
             placeholder.cleanUpCallback = () => {
                 console.log("clean up:", this);
             }
+        }).catch(reason => {
+            console.error(reason, context);
         });
+    }
+
+    replaceLeaves(tree, fn) {
+        let children = Object.keys(tree);
+        for (let branch of children) {
+            let child = tree[branch];
+            if (typeof child === "object") {
+                if (!this.replaceLeaves(child, fn)) tree[branch] = fn;
+            }
+        }
+        return children.length;
     }
 
     renderItem($scope, [item, index]) {
         let clone = this.template.cloneNode(true);
-        clone.$scope = Object.create($scope);
-        clone.$scope[this.item] = item;
-        clone.$scope["$index"] = index;
+        createScope(clone, {
+            [this.item]: item,
+            "$index": index
+        });
         return clone;
     }
 }

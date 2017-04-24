@@ -48,3 +48,26 @@ export function appendCallback(target, methodName, callback) {
         target[methodName] = callback;
     }
 }
+
+class LoggingProxyHandler {
+
+    constructor(name) {
+        this.name = name;
+    }
+
+    get(target, property) {
+        if (target.hasOwnProperty(property)) {
+            console.log("get:", this.name, "[", property, "]");
+            let value = target[property];
+            return typeof value === 'object' ? new Proxy(value, new LoggingProxyHandler(this.name + " > " + property)) : value;
+        } else {
+            return target[property];
+        }
+    }
+
+    set(target, property, value, receiver) {
+        console.log("set:", this.name, "[", property, "]");
+        target[property] = value;
+        return true;
+    }
+}
