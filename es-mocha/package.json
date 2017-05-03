@@ -1,0 +1,19 @@
+{
+  "name": "es-mocha",
+  "version": "1.0.0",
+  "description": "",
+  "main": "lib/bootstrap.js",
+  "bin": {
+    "node-esml": "bin/_mocha"
+  },
+  "scripts": {
+    "test": "node bin/_mocha"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "chokidar": "^1.6.1",
+    "mocha": "^3.3.0",
+    "core-loader": "^1.0.0"
+  }
+}
