@@ -28,7 +28,7 @@ describe("TranspilerTemplate", () => {
             assert.equal(helper.source, path.resolve(".", "src"));
             assert.equal(helper.target, path.resolve(".", "out"));
         });
-    })
+    });
 
     describe("match", function () {
         it("by default matches all files non recursively", function () {
@@ -46,19 +46,21 @@ describe("TranspilerTemplate", () => {
         it("matches according to base", function () {
             const tt = new class extends TranspilerTemplate {
                 locate(file) {
-                    assert.equal(file, "e/d/x.y");
-                    return super.locate(file);
+                    assert.equal(win2unix(file), "e/d/x.y");
+                    return Promise.reject("terminated");
                 }
                 sourceFileInfo(file) {
-                    assert.equal(path.relative(".", path.resolve(this.source, file)), "s/m/e/d/x.y");
+                    assert.equal(path.relative(".", win2unix(path.resolve(this.source, file))), "s/m/e/d/x.y");
                 }
                 targetFileInfo(file) {
-                    assert.equal(path.relative(".", path.resolve(this.target, file)), "t/l/e/d/x.y");
+                    assert.equal(path.relative(".", win2unix(path.resolve(this.target, file))), "t/l/e/d/x.y");
                 }
                 error() {
                 }
             }({match: "a/b/c/**/d/*.y", source: "s/m", target: "t/l"});
-            return tt.accept("a/b/c/e/d/x.y");
+            return tt.accept("a/b/c/e/d/x.y").catch(reason => {
+                assert.equal(reason, "terminated");
+            });
         });
     });
 
@@ -240,4 +242,8 @@ describe("TranspilerTemplate", () => {
             });
         })
     });
-})
+});
+
+function win2unix(path) {
+    return path.replace(/\\/g, "/");
+}

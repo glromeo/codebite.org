@@ -1,5 +1,16 @@
 {
+  "sourceMaps": true,
   "presets": [
-    "env"
+    [
+      "env",
+      {
+        "targets": {
+          "chrome": 56
+        }
+      }
+    ]
+  ],
+  "plugins": [
+    "transform-decorators-legacy"
   ]
 }

@@ -9,10 +9,14 @@
     "prepublish": "rollup -c"
   },
   "devDependencies": {
+    "babel-polyfill": "^6.23.0",
     "es-module-loader": "^2.0.0",
+    "minimatch": "^3.0.3",
+    "mocha": "^3.3.0",
     "rollup": "^0.34.7",
     "rollup-plugin-node-resolve": "^2.0.0",
-    "source-map-support": "^0.4.4"
+    "source-map-support": "^0.4.4",
+    "systemjs": "^0.20.12"
   },
   "main": "lib/simple-module-loader.js",
   "dependencies": {

@@ -6,7 +6,8 @@
   "scripts": {
     "babel": "node_modules/.bin/babel src/main/babel --out-dir target/lib --source-maps",
     "sass": "node_modules/.bin/node-sass --source-map true --output-style compressed src/main/styles/main.scss -o target/styles",
-    "start": "node index.js"
+    "test": "node ../es6-mocha/bin/_mocha",
+    "start": "node express.js"
   },
   "author": "",
   "license": "ISC",
@@ -14,10 +15,14 @@
     "babel-cli": "^6.24.0",
     "babel-plugin-transform-decorators-legacy": "^1.3.4",
     "babel-preset-env": "^1.3.2",
+    "chai": "^3.5.0",
+    "chai-datetime": "^1.4.1",
+    "chai-http": "^3.0.0",
     "errorhandler": "^1.5.0",
     "express": "^4.14.0",
     "fs-promise": "^2.0.0",
     "jasmine": "^2.5.3",
+    "mocha": "^3.3.0",
     "serve-index": "^1.8.0",
     "transpile-any-middleware": "^1.0.0"
   },

@@ -1,0 +1,3 @@
+loader.config({
+    "alpha": "beta"
+});

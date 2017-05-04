@@ -1,10 +1,10 @@
 import nodeResolve from 'rollup-plugin-node-resolve';
 
 export default {
-  entry: 'lib/es-module-loader.src.js',
+  entry: 'src/system-register-loader.js',
   format: 'umd',
-  moduleName: 'EsModuleLoader',
-  dest: 'lib/es-module-loader.js',
+  moduleName: 'SystemRegisterLoader',
+  dest: 'dist/system-register-loader.js',
 
   plugins: [
     nodeResolve({
