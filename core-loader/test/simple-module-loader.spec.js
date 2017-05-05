@@ -4,6 +4,8 @@ var importSyntax = require('babel-plugin-syntax-dynamic-import');
 
 var SimpleModuleLoader = require("../lib/simple-module-loader");
 
+require('source-map-support').install();
+
 describe("SimpleModuleLoader", () => {
 
     it("uses the transpiler to resolve a file", function () {
@@ -15,22 +17,21 @@ describe("SimpleModuleLoader", () => {
                 "lib/**/*.js": {
                     source: "test/fixture",
                     target: "test/work",
+                    force: true,
                     transpiler: function (from, to) {
                         let key = from.path;
                         return babel.transformFileSync(from.path, {
-                            compact: false,
-                            filename: key + '!transpiled',
-                            sourceFileName: key,
-                            moduleIds: false,
-                            sourceMaps: 'both',
-                            plugins: [importSyntax, modulesRegister],
-                            extends: loader.rcPath
+                            "sourceMaps": true,
+                            "plugins": [importSyntax, modulesRegister]
                         })
                     }
                 }
             }
         });
 
-        loader.import("lib/module_alpha/alpha.js").then(console.log.bind(console)).catch(console.error.bind(console));
+        return loader.import("lib/module_alpha/alpha.js").then(m => {
+            console.log(...arguments);
+            m.HelloWorld();
+        });
     });
 });

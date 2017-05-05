@@ -25,8 +25,13 @@ describe("TranspilerTemplate", () => {
     describe("constructor", function () {
         it("resolves source and target to current working directory", function () {
             const helper = new TranspilerTemplate({source: "src", target: "out"});
-            assert.equal(helper.source, path.resolve(".", "src"));
-            assert.equal(helper.target, path.resolve(".", "out"));
+            assert.equal(helper.source, path.resolve("src"));
+            assert.equal(helper.target, path.resolve("out"));
+        });
+        it("computes base correctly", function () {
+            assert.equal(new TranspilerTemplate({match: "a/b/**/*.*"}).base, "a/b");
+            assert.equal(new TranspilerTemplate({match: "**/*.js"}).base, "");
+            assert.equal(new TranspilerTemplate({match: "*.js"}).base, "");
         });
     });
 
@@ -49,12 +54,15 @@ describe("TranspilerTemplate", () => {
                     assert.equal(win2unix(file), "e/d/x.y");
                     return Promise.reject("terminated");
                 }
+
                 sourceFileInfo(file) {
                     assert.equal(path.relative(".", win2unix(path.resolve(this.source, file))), "s/m/e/d/x.y");
                 }
+
                 targetFileInfo(file) {
                     assert.equal(path.relative(".", win2unix(path.resolve(this.target, file))), "t/l/e/d/x.y");
                 }
+
                 error() {
                 }
             }({match: "a/b/c/**/d/*.y", source: "s/m", target: "t/l"});
@@ -83,11 +91,23 @@ describe("TranspilerTemplate", () => {
 
         it('returns source file stat & other info if file present', () => {
             let srcFile = path.resolve(resources, 'sample.txt');
-            return transpiler.sourceFileInfo(srcFile).then(function ({path, mtime}) {
+            return transpiler.sourceFileInfo(srcFile).then(function ({path, stats}) {
                 assert.equal(path, srcFile, "path is the source file absolute path");
-                assert.ok(mtime, "has modification time");
+                assert.ok(stats.mtime, "has modification time");
             });
         });
+
+        it("resolves to a unique source file", () => {
+            return transpiler.sourceFileInfo("dir/included.xyz").then(info => {
+                assert.equal(info.path, path.resolve(resources, "dir/included.txt"));
+            })
+        })
+
+        it("fails if it can't resolves to a unique source file", () => {
+            return transpiler.sourceFileInfo("sample.*").then(() => assert.ok(false)).catch(error => {
+                assert.equal(error, 'multiple source files found: ["sample.js","sample.txt"]');
+            })
+        })
     });
 
     describe("targetFileInfo", function () {
@@ -134,8 +154,8 @@ describe("TranspilerTemplate", () => {
         it('returns correct mtime', () => {
             let xyz = path.resolve(work, "xyz");
             fs.writeFileSync(xyz, "It's just a file!");
-            return transpiler.targetFileInfo('xyz').then(info => {
-                chai.assert.equalDate(info.mtime, fs.statSync(xyz).mtime);
+            return transpiler.targetFileInfo('xyz').then(({stats}) => {
+                chai.assert.equalDate(stats.mtime, fs.statSync(xyz).mtime);
             });
         });
     });

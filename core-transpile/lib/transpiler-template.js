@@ -3,18 +3,26 @@
 const chokidar = require("chokidar");
 const path = require("path");
 const fs = require("fs");
-const fse = require("fs-extra");
-const {relative, basename, dirname, resolve} = require("path");
+const {ensureDirSync} = require("fs-extra");
+const {
+    relative,
+    basename,
+    dirname,
+    resolve,
+    extname
+} = require("path");
 
 const {Minimatch} = require("minimatch");
 
 class TranspilerTemplate {
 
-    constructor({match = "*.*", source = ".", target = "."}) {
+    constructor({match = "*", source = ".", target = ".", force = false}) {
         this.minimatch = new Minimatch(match);
-        this.base = match.split('**')[0];
+        this.base = match.replace(/\/?\*.*/, "");
+        this.ext = extname(match);
         this.source = resolve(source);
         this.target = resolve(target);
+        this.force = force;
     }
 
     error() {
@@ -30,6 +38,15 @@ class TranspilerTemplate {
         return this.minimatch.match(path);
     }
 
+    reverse(path, key) {
+        key = key.replace(extname(key), '') + this.ext;
+        if (key.startsWith("./")) {
+            return this.base + "/" + relative(this.target, path) + key.substring(1);
+        } else {
+            return this.base + "/" + relative(this.target, path) + "/" + key;
+        }
+    }
+
     /**
      *
      * @param path
@@ -40,17 +57,21 @@ class TranspilerTemplate {
     }
 
     resolve(path) {
-        return this.locate(relative(this.base, path)).then(([from, to]) => {
-            if (this.mustTranspile(from, to)) {
+
+        path = relative(this.base, path);
+        console.log("relative path:", path);
+
+        return this.locate(path).then(([from, to]) => {
+            if (this.force || this.mustTranspile(from, to)) {
+                console.log("transpiling from:", from.path, "to:", to.path);
                 return Promise.resolve(this.transpile(from, to)).then(output => {
                     if (output === undefined) {
                         return to;
                     }
                     try {
                         this.save(output, from, to);
-                        console.log("transpiled from:", from.path, "to:", to.path);
                     } catch (e) {
-                        console.error("error writing transpiled file:", to.path, err.code);
+                        console.error("error writing transpiled file:", to.path, e);
                         throw e;
                     }
                     return Object.assign({path: to.path}, fs.statSync(to.path));
@@ -61,8 +82,8 @@ class TranspilerTemplate {
         });
     }
 
-    locate(file) {
-        return Promise.all([this.sourceFileInfo(file), this.targetFileInfo(file)]);
+    locate(path) {
+        return Promise.all([this.sourceFileInfo(path), this.targetFileInfo(path)]);
     }
 
     /**
@@ -72,18 +93,39 @@ class TranspilerTemplate {
      */
     sourceFileInfo(relativePath) {
 
-        const path = resolve(this.source, relativePath);
+        let path = resolve(this.source, relativePath);
 
-        return new Promise((resolve, reject) => {
-            fs.stat(path, (err, stat) => {
-                if (err && err.code === 'ENOENT') {
-                    reject("file not found: " + path);
-                } else if (stat.isDirectory()) {
-                    reject("file is a directory: " + path);
+        return new Promise((ok, fail) => {
+
+            const dir = dirname(path);
+            const name = basename(path, extname(path));
+
+            fs.readdir(dir, (err, files) => {
+                if (err) {
+                    fail("cannot find source file: " + path);
                 } else {
-                    resolve(Object.assign({path: path}, stat));
+                    const found = files.filter(file => basename(file, extname(file)) === name);
+
+                    if (found.length === 1) {
+
+                        path = resolve(dir, found[0]);
+                        console.log("reading stats for source file:", path);
+
+                        fs.stat(path, (err, stats) => {
+                            if (err && err.code === 'ENOENT') {
+                                fail("source file not found: " + path);
+                            } else if (stats.isDirectory()) {
+                                fail("source file is a directory: " + path);
+                            } else {
+                                ok({path: path, stats: stats});
+                            }
+                        });
+
+                    } else {
+                        fail("multiple source files found: " + JSON.stringify(found));
+                    }
                 }
-            });
+            })
         });
     }
 
@@ -97,37 +139,34 @@ class TranspilerTemplate {
 
         const path = resolve(this.target, relativePath);
 
-        return new Promise((resolve, reject) => {
+        return new Promise((ok, fail) => {
             let dir = dirname(path);
             if (!quick) try {
-                fse.ensureDirSync(dir);
+                ensureDirSync(dir);
             } catch (e) {
-                reject("unable to create dir: " + dir + ", error code: " + e);
+                fail("unable to create target dir: " + dir + ", error code: " + e);
             }
-            fs.stat(path, (err, stat) => {
+            console.log("reading stats for target file:", path);
+            fs.stat(path, (err, stats) => {
                 if (!err) {
-                    if (stat.isDirectory()) {
-                        reject("file is a directory: " + path);
+                    if (stats.isDirectory()) {
+                        fail("target file is a directory: " + path);
                     } else {
-                        resolve(Object.assign({path: path}, stat));
+                        ok(Object.assign({path: path, stats: stats}));
                     }
                 } else {
-                    resolve({path: path});
+                    ok({path: path});
                 }
             });
         });
     }
 
     mustTranspile(from, to) {
-        return !to.mtime || from.mtime > to.mtime;
+        return to.stats === undefined || from.stats.mtime > to.stats.mtime;
     }
 
     transpile(from, to) {
         console.error("ignored", from.path, "-> ", to.path);
-    }
-
-    exec({code, map, ast}, path) {
-        return true;
     }
 
     save(output, from, to) {
@@ -138,7 +177,7 @@ class TranspilerTemplate {
 
         const {code, map} = output;
 
-        if (map && this.sourceMaps) {
+        if (map) {
 
             map.path = to.path + ".map";
 
@@ -146,19 +185,19 @@ class TranspilerTemplate {
                 map.file = basename(from.path);
                 map.sourceRoot = this.sourceRoot;
                 map.sources[0] = resolve(this.sourceRoot, relative(this.source, from.path));
-
-                output.code += '\n//# sourceMappingURL=' + map.file + ".map";
             }
 
-            try {
-                console.log("written map file:", map.path);
-                console.error("error writing map file:", map.path, e);
-            } catch (e) {
-                err("error writing map file:", map.path, e);
-            }
+            fs.writeFile(map.path, JSON.stringify(map), (err) => {
+                if (err) {
+                    this.error("error writing map file:", map.path, err);
+                } else {
+                    console.log("written map file:", map.path);
+                }
+            })
+            return fs.writeFileSync(to.path, code + '\n//# sourceMappingURL=' + to.path + ".map" + "\n//# sourceURL=" + from.path);
+        } else {
+            return fs.writeFileSync(to.path, code + "\n//# sourceURL=" + from.path);
         }
-
-        return fs.writeFileSync(to.path, code);
     }
 
     ready(file) {

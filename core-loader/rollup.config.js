@@ -1,18 +1,18 @@
-import nodeResolve from 'rollup-plugin-node-resolve';
+import nodeResolve from "rollup-plugin-node-resolve";
+import cleanup from "rollup-plugin-cleanup";
 
 export default {
-  entry: 'lib/es-module-loader.src.js',
-  format: 'umd',
-  moduleName: 'EsModuleLoader',
-  dest: 'lib/es-module-loader.js',
+    entry: 'src/node-es-module-loader.js',
+    format: 'umd',
+    moduleName: 'NodeESModuleLoader',
+    dest: 'lib/node-es-module-loader.js',
 
-  plugins: [
-    nodeResolve({
-      module: false,
-      jsnext: false,
-    })
-  ],
+    plugins: [
+        nodeResolve(),
+        cleanup()
+    ],
 
-  // skip rollup warnings (specifically the eval warning)
-  onwarn: function() {}
+    // skip rollup warnings (specifically the eval warning)
+    onwarn: function () {
+    }
 };
