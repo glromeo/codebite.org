@@ -14,6 +14,8 @@ const {
 
 const {Minimatch} = require("minimatch");
 
+const debug = false;
+
 class TranspilerTemplate {
 
     constructor({match = "*", source = ".", target = ".", force = false}) {
@@ -58,12 +60,21 @@ class TranspilerTemplate {
 
     resolve(path) {
 
-        path = relative(this.base, path);
-        console.log("relative path:", path);
+        if (this.base) {
+            path = relative(this.base, path);
+            if (debug) {
+                console.log("resolving relative path:", path);
+            }
+        }
 
         return this.locate(path).then(([from, to]) => {
+            if (debug) {
+                console.log("files located");
+            }
             if (this.force || this.mustTranspile(from, to)) {
-                console.log("transpiling from:", from.path, "to:", to.path);
+                if (debug) {
+                    console.log("transpiling from:", from.path, "to:", to.path);
+                }
                 return Promise.resolve(this.transpile(from, to)).then(output => {
                     if (output === undefined) {
                         return to;
@@ -109,7 +120,9 @@ class TranspilerTemplate {
                     if (found.length === 1) {
 
                         path = resolve(dir, found[0]);
-                        console.log("reading stats for source file:", path);
+                        if (debug) {
+                            console.log("reading stats for source file:", path);
+                        }
 
                         fs.stat(path, (err, stats) => {
                             if (err && err.code === 'ENOENT') {
@@ -121,8 +134,10 @@ class TranspilerTemplate {
                             }
                         });
 
-                    } else {
+                    } else if (found.length > 1) {
                         fail("multiple source files found: " + JSON.stringify(found));
+                    } else {
+                        fail("no source files found");
                     }
                 }
             })
@@ -146,7 +161,9 @@ class TranspilerTemplate {
             } catch (e) {
                 fail("unable to create target dir: " + dir + ", error code: " + e);
             }
-            console.log("reading stats for target file:", path);
+            if (debug) {
+                console.log("reading stats for target file:", path);
+            }
             fs.stat(path, (err, stats) => {
                 if (!err) {
                     if (stats.isDirectory()) {
@@ -183,20 +200,21 @@ class TranspilerTemplate {
 
             if (map.file === "unknown") {
                 map.file = basename(from.path);
-                map.sourceRoot = this.sourceRoot;
-                map.sources[0] = resolve(this.sourceRoot, relative(this.source, from.path));
+                map.sourceRoot = this.source;
+                map.sources[0] = from.path;
             }
 
-            fs.writeFile(map.path, JSON.stringify(map), (err) => {
-                if (err) {
-                    this.error("error writing map file:", map.path, err);
-                } else {
-                    console.log("written map file:", map.path);
-                }
-            })
-            return fs.writeFileSync(to.path, code + '\n//# sourceMappingURL=' + to.path + ".map" + "\n//# sourceURL=" + from.path);
+            try {
+                fs.writeFileSync(map.path, JSON.stringify(map));
+                console.log("written map file:", map.path);
+            } catch (err) {
+                this.error("error writing map file:", map.path, err);
+            }
+
+            return fs.writeFileSync(to.path, code+ '\n//# sourceMappingURL=' + to.path + ".map" + "\n//# sourceURL=" + from.path);
         } else {
-            return fs.writeFileSync(to.path, code + "\n//# sourceURL=" + from.path);
+            // + "\n//# sourceURL=" + from.path
+            return fs.writeFileSync(to.path, code+ "\n//# sourceURL=" + from.path);
         }
     }
 

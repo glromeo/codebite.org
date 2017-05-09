@@ -20,14 +20,13 @@ console.log("pattern:", pattern);
 
 const watcher = chokidar.watch(pattern, {cwd: home});
 
-configure(path.resolve(root, 'test-config.js'));
-
-function configure(path) {
-    if (fs.existsSync(path)) loader.import(path).catch(throwRejection);
+let testConfig = path.resolve(root, 'test-config.js');
+if (fs.existsSync(testConfig)) {
+    loader.import(testConfig).catch(throwRejection);
 }
 
 watcher.on('all', (event, file) => {
-    file = path.resolve(base, file);
+    file = path.join(base, file);
     switch (event) {
         case 'add':
             loader.import(file).then(function () {

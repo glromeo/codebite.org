@@ -115,30 +115,38 @@ class PageFooter extends PaperElement {
     }
 }
 
-class VisitingHandler {
-
-    constructor(visited) {
-        this.visited = visited;
-    }
+class VisitTrail {
 
     set(target, property, value) {
         return false;
     }
 
     get(target, property) {
-        if (this.visited.hasOwnProperty(property)) {
+        if (this.hasOwnProperty(property)) {
             if (debug) console.debug("visited:", property);
             return target[property];
         }
         let value = target[property];
         if (value && typeof value === "object") {
             if (debug) console.debug("visiting:", property);
-            let visited = this.visited[property] = {};
-            return new Proxy(value, new VisitingHandler(visited));
+            return new Proxy(value, this[property] = new VisitTrail());
         } else {
             if (debug) console.debug("value:", property, value);
             return value;
         }
+    }
+
+    prune(fn) {
+        let keys = Object.keys(this);
+        for (let key of keys) {
+            let node = this[key];
+            if (node && typeof node === "object") {
+                if (!node.prune(fn)) this[key] = fn;
+            } else {
+                this[key] = undefined;
+            }
+        }
+        return keys.length;
     }
 }
 
@@ -170,18 +178,17 @@ class ForEach extends PaperElement {
             return left.concat(right);
         });
 
-        let handler = new VisitingHandler({});
-        let context = new Proxy($scope, handler);
+        let trail = new VisitTrail();
+        let context = new Proxy($scope, trail);
 
         let expression = this.getAttribute("in");
 
         return jexl.eval(expression, context).then((items) => {
-            let visited = handler.visited;
-            this.replaceLeaves(visited, function (path, {to, from}) {
+            trail.prune(function (path, {to, from}) {
                 console.log("changed:", path, "(", to, "<-", from, ")");
             });
-            console.log("visited:", visited);
-            $scope.$watch(visited);
+            console.log("trail:", trail);
+            $scope.$watch(trail);
             return items;
         }).then((items) => {
 
@@ -203,17 +210,6 @@ class ForEach extends PaperElement {
         }).catch(reason => {
             console.error(reason, context);
         });
-    }
-
-    replaceLeaves(tree, fn) {
-        let children = Object.keys(tree);
-        for (let branch of children) {
-            let child = tree[branch];
-            if (typeof child === "object") {
-                if (!this.replaceLeaves(child, fn)) tree[branch] = fn;
-            }
-        }
-        return children.length;
     }
 
     renderItem($scope, [item, index]) {

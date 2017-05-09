@@ -5,12 +5,12 @@
   "author": "Gianluca Romeo (glromeo@gmail.com)",
   "license": "MIT",
   "scripts": {
-    "build": "rollup -c",
-    "prepublish": "rollup -c"
+    "build": "rollup -c"
   },
   "devDependencies": {
     "babel-polyfill": "^6.23.0",
     "es-module-loader": "^2.0.0",
+    "lodash": "^4.17.4",
     "minimatch": "^3.0.3",
     "mocha": "^3.3.0",
     "node-es-module-loader": "^0.3.8",

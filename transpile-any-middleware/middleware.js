@@ -9,7 +9,8 @@ module.exports = function (options) {
 
     var debug = options.debug;
 
-    let root = options.root || path.resolve('.');
+    let root = path.resolve('.');
+    debug && console.log("root:", root);
 
     let transpiler = typeof options === "function" ? options : options.transpiler;
     if (!transpiler) {
@@ -17,16 +18,21 @@ module.exports = function (options) {
     }
 
     let srcDir = path.resolve(root, options.src || path.dirname(options.from || '.'));
+    debug && console.log("src:", srcDir);
     let fromExt = path.extname((options.from || options.ext || '').replace('\\*', ''));
+    debug && console.log("src ext:", srcDir);
 
     let outDir = path.resolve(root, options.dest || path.dirname(options.to || '.'));
+    debug && console.log("dest:", srcDir);
     let toExt = path.extname((options.to || options.ext || '').replace('\\*', ''));
+    debug && console.log("dest ext:", srcDir);
 
-    let sourceRoot = path.posix.dirname('/' + path.posix.relative(root, srcDir));
+    let sourceRoot = '/' + path.relative(root, srcDir).replace(/\\/g, "/");
+    debug && console.log("source root:", sourceRoot);
 
     if (options.clean) {
         let destPath = path.resolve(root, outDir);
-        console.log("cleaning contents of dest path:", destPath);
+        debug && console.log("cleaning contents of dest path:", destPath);
         rmTree(destPath, toExt);
     }
 
@@ -48,6 +54,7 @@ module.exports = function (options) {
         return fsp.readFile(srcFile).then(source => transpiler(source, context)).then(out => {
 
             if (typeof out === "string") {
+                console.log("transpiler returned a string");
                 out = {
                     code: out
                 };
@@ -55,21 +62,24 @@ module.exports = function (options) {
 
             let map = out.map;
             if (map) {
+                console.log("saving map file...");
+
                 let mapFile = destFile + ".map";
                 if (map.file === "unknown") {
                     map.file = path.basename(srcFile);
                     map.sourceRoot = sourceRoot;
-                    map.sources[0] = path.resolve(sourceRoot, path.relative(root, srcFile));
+                    map.sources[0] = path.relative(srcDir, srcFile).replace(/\\/g, "/");
                     out.code += '\n//# sourceMappingURL=' + map.file + ".map";
                 }
                 fsp.writeFile(mapFile, JSON.stringify(map)).then(() => {
-                    console.log("written map file:", mapFile)
+                    console.log("saved map file:", mapFile)
                 }, (rejection) => {
                     console.log("error writing map file:", mapFile, JSON.stringify(rejection));
                 });
             }
 
             let saved = fsp.writeFile(destFile, out.code);
+            console.log("saved target file");
 
             if (options.quick !== false) {
                 return out;
@@ -87,10 +97,10 @@ module.exports = function (options) {
     function statDestFile(destFile) {
         return fsp.ensureDir(path.dirname(destFile)).then(() => {
             return fsp.stat(destFile).then(destStats => {
-                if (debug) console.log("found dest file:", destFile, "last-modified:", destStats.mtime.toUTCString());
+                debug && console.log("found dest file:", destFile, "last-modified:", destStats.mtime.toUTCString());
                 return destStats;
             }, () => {
-                if (debug) console.log("dest file:", destFile, "not found");
+                debug && console.log("dest file:", destFile, "not found");
                 return false;
             })
         });
@@ -103,7 +113,7 @@ module.exports = function (options) {
 
         let requestPath = req.path;
         if (path.extname(requestPath) !== toExt) {
-            if (debug) console.log("skipped:", requestPath);
+            debug && console.log("skipped:", requestPath);
             next();
             return;
         }
@@ -117,7 +127,7 @@ module.exports = function (options) {
 
             if (mustTranspile(srcStats, destStats)) {
                 return transpile(srcFile, destFile, {req, res, srcFile, destFile}).then(out => {
-                    if (debug) console.log("transpiled from:", srcFile, "to:", destFile);
+                    debug && console.log("transpiled from:", srcFile, "to:", destFile);
                     out.mtime = new Date();
                     return out;
                 });
@@ -141,21 +151,21 @@ module.exports = function (options) {
             res.header("Last-Modified", out.mtime.toUTCString());
 
             if (out.file) {
-                console.log("reading transpiled file");
+                debug && console.log("reading transpiled file");
                 return fsp.readFile(out.file);
             } else {
-                console.log("providing code directly");
+                debug && console.log("providing code directly");
                 return out.code;
             }
 
         }).then(code => {
 
-            console.log("sending transpiled content");
+            debug && console.log("sending transpiled content");
             res.send(code);
 
         }).catch(function (rejection) {
 
-            console.log("transpile failed:", rejection);
+            console.error("transpile failed:", rejection);
             res.status(500).send(rejection);
         });
     }
