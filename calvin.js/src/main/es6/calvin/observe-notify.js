@@ -1,4 +1,10 @@
+import jexl from "jexl";
+
 const debug = true;
+
+jexl.addBinaryOp('union', 0, function (left, right) {
+    return left.concat(right);
+});
 
 class FieldChange {
     constructor(index, to, from) {
@@ -22,22 +28,24 @@ class PropertyChange {
     }
 }
 
-function getHandler(property) {
+function getPropertyHandler(property) {
     return this.handlers[property] || (this.handlers[property] = new ObservableHandler(this, property));
 }
+
+let LISTENERS = "[[Listeners]]";
+let PROXY = "[[Proxy]]";
 
 class ObservableHandler {
 
     constructor(parent, property) {
-        this.listeners = [];
-        this.handlers = {};
+        this[LISTENERS] = new Set();
         this.path = () => {
             return parent.path() + ">" + property;
         }
     }
 
-    notify(change) {
-        for (let listener of this.listeners) try {
+    $notify(change) {
+        for (let listener of this[LISTENERS]) try {
             console.log("notifying:", this.path() + change.toString());
             listener(this.path() + ">" + change.what, change);
         } catch (e) {
@@ -46,35 +54,27 @@ class ObservableHandler {
     }
 
     get(target, property) {
-        let value = target[property];
-        let handler = this.handlers[property];
-        if (handler) {
-            if (value[Symbol.for("observable")]) {
-                if (debug) {
-                    if (Array.isArray(target) && !isNaN(property)) {
-                        console.debug("get:", this.path() + "[" + property + "] => cached proxy");
-                    } else {
-                        console.debug("get:", this.path() + "." + property + " => cached proxy");
-                    }
-                }
-                return value;
-            } else {
-                value[Symbol.for("observable")] = true;
-                if (debug) {
-                    if (Array.isArray(target) && !isNaN(property)) {
-                        console.debug("get:", this.path() + "[" + property + "]  => new proxy");
-                    } else {
-                        console.debug("get:", this.path() + "." + property + " => new proxy");
-                    }
-                }
-                return target[property] = new Proxy(value, handler);
-            }
+        let local = this[property];
+        if (local !== undefined) {
+            return local;
+        } else {
+            return target[property];
         }
-        return value;
     }
 
-    set(target, property, value, receiver) {
-        if (this.listeners.length) {
+    set(target, property, value) {
+        if (value === PROXY) {
+            if (debug) {
+                if (Array.isArray(target) && !isNaN(property)) {
+                    console.debug("get:", this.path() + "[" + property + "]  => new proxy");
+                } else {
+                    console.debug("get:", this.path() + "." + property + " => new proxy");
+                }
+            }
+            this[property] = new Proxy(target[property], new ObservableHandler(this, property));
+            return true;
+        }
+        if (this[LISTENERS].size) {
             if (debug) {
                 if (Array.isArray(target) && !isNaN(property)) {
                     console.debug("set:", this.path() + "[" + property + "]", "=", value);
@@ -83,9 +83,9 @@ class ObservableHandler {
                 }
             }
             if (Array.isArray(target) && !isNaN(property)) {
-                this.notify(new FieldChange(property, value, target[property]));
+                this.$notify(new FieldChange(property, value, target[property]));
             } else {
-                this.notify(new PropertyChange(property, value, target[property]));
+                this.$notify(new PropertyChange(property, value, target[property]));
             }
         }
         target[property] = value;
@@ -102,23 +102,47 @@ export class ObservableRootHandler extends ObservableHandler {
         }
     }
 
-    $watch(watchers) {
+    $eval(expression) {
+        return jexl.eval(expression, this);
+    }
 
-        (function watch(watchers) {
-            for (let property of Object.keys(watchers)) {
-                let handler = getHandler.call(this, property);
-                let w = watchers[property];
-                if (w instanceof Function) {
-                    handler.listeners.push(w);
-                } else if (w instanceof Object) {
-                    watch.call(handler, w);
-                }
-            }
-        }).call(this, watchers);
+    $watch(expression, callback) {
 
         console.log("watching:", this.path(), this);
 
-        return () => {
+        class WatchingHandler {
+
+            set(target, property, value) {
+                console.error("denied access to:", target, property);
+                return false;
+            }
+
+            get(target, property) {
+
+                let value = this[property];
+                if (value !== undefined) {
+                    return value;
+                }
+
+                if (target[LISTENERS]) {
+                    target[LISTENERS].add(callback);
+                }
+
+                value = target[property];
+                if (value && typeof value === "object") {
+                    if (value[LISTENERS] === undefined) {
+                        target[property] = PROXY;
+                    }
+                    return this[property] = new Proxy(target[property], new WatchingHandler());
+                } else {
+                    return this[property] = value;
+                }
+            }
+        }
+
+        let promise = jexl.eval(expression, new Proxy(this, new WatchingHandler()));
+
+        promise.cancel = () => {
             (function unwatch(watchers) {
                 let handlers = this.handlers;
                 for (let property of Object.keys(watchers)) {
@@ -126,23 +150,16 @@ export class ObservableRootHandler extends ObservableHandler {
                     if (handler === undefined) {
                         continue;
                     }
+                    let listeners = handler.listeners;
+                    delete listeners[listeners.indexOf(callback)];
                     let w = watchers[property];
-                    if (w instanceof Function) {
-                        let listeners = handler.listeners;
-                        delete listeners[listeners.indexOf(w)];
-                    } else if (w instanceof Object) {
+                    if (w && typeof w === "object") {
                         unwatch(w);
                     }
                 }
             })(watchers);
-        }
-    }
+        };
 
-    record() {
-
-    }
-
-    get(target, property) {
-        return this[property] || super.get(target, property);
+        return promise;
     }
 }

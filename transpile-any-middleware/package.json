@@ -1,6 +1,6 @@
 {
     "name": "transpile-any-middleware",
-    "version": "1.0.11",
+    "version": "1.0.12",
     "description": "A generic unopinionated middleware for invoking compilers or transpilers like TypeScript or Babel",
     "main": "middleware.js",
     "scripts": {

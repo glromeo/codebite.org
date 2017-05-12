@@ -1,6 +1,5 @@
 import {appendCallback, closest, visitTree} from "calvin/utility";
 import {CustomElement} from "decorators/@CustomElement";
-import jexl from "jexl";
 import {createScope} from "./main";
 
 const debug = false;
@@ -115,40 +114,6 @@ class PageFooter extends PaperElement {
     }
 }
 
-class VisitTrail {
-
-    set(target, property, value) {
-        return false;
-    }
-
-    get(target, property) {
-        if (this.hasOwnProperty(property)) {
-            if (debug) console.debug("visited:", property);
-            return target[property];
-        }
-        let value = target[property];
-        if (value && typeof value === "object") {
-            if (debug) console.debug("visiting:", property);
-            return new Proxy(value, this[property] = new VisitTrail());
-        } else {
-            if (debug) console.debug("value:", property, value);
-            return value;
-        }
-    }
-
-    prune(fn) {
-        let keys = Object.keys(this);
-        for (let key of keys) {
-            let node = this[key];
-            if (node && typeof node === "object") {
-                if (!node.prune(fn)) this[key] = fn;
-            } else {
-                this[key] = undefined;
-            }
-        }
-        return keys.length;
-    }
-}
 
 @CustomElement
 class ForEach extends PaperElement {
@@ -174,23 +139,13 @@ class ForEach extends PaperElement {
         let fragment = document.createDocumentFragment();
         fragment.appendChild(placeholder);
 
-        jexl.addBinaryOp('union', 0, function (left, right) {
-            return left.concat(right);
-        });
-
-        let trail = new VisitTrail();
-        let context = new Proxy($scope, trail);
-
         let expression = this.getAttribute("in");
 
-        return jexl.eval(expression, context).then((items) => {
-            trail.prune(function (path, {to, from}) {
-                console.log("changed:", path, "(", to, "<-", from, ")");
+        return $scope.$eval(expression).then((items) => {
+
+            $scope.$watch(expression, function (path, {to, from}) {
+                console.log("changed: (", JSON.stringify(to), "<-", JSON.stringify(from), ")");
             });
-            console.log("trail:", trail);
-            $scope.$watch(trail);
-            return items;
-        }).then((items) => {
 
             if (Array.isArray(items)) {
                 items.forEach((item, index) => {
@@ -208,7 +163,7 @@ class ForEach extends PaperElement {
                 console.log("clean up:", this);
             }
         }).catch(reason => {
-            console.error(reason, context);
+            console.error(reason);
         });
     }
 

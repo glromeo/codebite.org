@@ -14,7 +14,7 @@ const babel_preset_env = require("babel-preset-env");
 
 const app = express();
 
-const fs = require("fs.extra");
+const fs = require("fs");
 
 /**
  * Sass Middleware
@@ -33,7 +33,7 @@ app.use('/styles', express.static(path.join(__dirname, 'target/css')));
  * Babel Middleware
  */
 app.use('/babel', transpileAnyMiddleware({
-    src: 'src/main/babel',
+    src: 'src/main/es6',
     dest: 'target/lib',
     from: '*.js',
     to: '*.js',
