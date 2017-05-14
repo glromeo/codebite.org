@@ -33,7 +33,6 @@ function getPropertyHandler(property) {
 }
 
 let LISTENERS = "[[Listeners]]";
-let PROXY = "[[Proxy]]";
 
 class ObservableHandler {
 
@@ -58,22 +57,17 @@ class ObservableHandler {
         if (local !== undefined) {
             return local;
         } else {
-            return target[property];
+            let value = target[property];
+            if (value && typeof value === "object" && property[0] !== '$') {
+                // Object.create(value)
+                return this[property] = new Proxy(value, new ObservableHandler(this, property));
+            } else {
+                return value;
+            }
         }
     }
 
     set(target, property, value) {
-        if (value === PROXY) {
-            if (debug) {
-                if (Array.isArray(target) && !isNaN(property)) {
-                    console.debug("get:", this.path() + "[" + property + "]  => new proxy");
-                } else {
-                    console.debug("get:", this.path() + "." + property + " => new proxy");
-                }
-            }
-            this[property] = new Proxy(target[property], new ObservableHandler(this, property));
-            return true;
-        }
         if (this[LISTENERS].size) {
             if (debug) {
                 if (Array.isArray(target) && !isNaN(property)) {
@@ -110,54 +104,52 @@ export class ObservableRootHandler extends ObservableHandler {
 
         console.log("watching:", this.path(), this);
 
-        class WatchingHandler {
+        let $scope = this.$self;
+        let current;
 
-            set(target, property, value) {
-                console.error("denied access to:", target, property);
-                return false;
-            }
-
-            get(target, property) {
-
-                let value = this[property];
-                if (value !== undefined) {
-                    return value;
-                }
-
-                if (target[LISTENERS]) {
-                    target[LISTENERS].add(callback);
-                }
-
-                value = target[property];
-                if (value && typeof value === "object") {
-                    if (value[LISTENERS] === undefined) {
-                        target[property] = PROXY;
-                    }
-                    return this[property] = new Proxy(target[property], new WatchingHandler());
-                } else {
-                    return this[property] = value;
-                }
-            }
+        function notify(path) {
+            jexl.eval(expression, $scope).then(items => callback(items, current)).catch(error => {
+                console.error(error);
+            });
         }
 
-        let promise = jexl.eval(expression, new Proxy(this, new WatchingHandler()));
+        let watchHandler = {
+            set(target, property) {
+                console.error("denied access to:", property);
+                return false;
+            },
+            get(target, property) {
+                if (target[LISTENERS]) {
+                    target[LISTENERS].add(notify);
+                }
+                let value = target[property];
+                if (value && typeof value === "object" && property[0] !== '$') {
+                    return new Proxy(value, watchHandler);
+                } else {
+                    return value;
+                }
+            }
+        };
+
+        let promise = jexl.eval(expression, new Proxy(this, watchHandler)).then(result => current = result);
 
         promise.cancel = () => {
-            (function unwatch(watchers) {
-                let handlers = this.handlers;
-                for (let property of Object.keys(watchers)) {
-                    let handler = handlers[property];
-                    if (handler === undefined) {
-                        continue;
+
+            let cancelHandler = {
+                get(target, property) {
+                    if (target[LISTENERS]) {
+                        target[LISTENERS].delete(callback);
                     }
-                    let listeners = handler.listeners;
-                    delete listeners[listeners.indexOf(callback)];
-                    let w = watchers[property];
-                    if (w && typeof w === "object") {
-                        unwatch(w);
+                    let value = target[property];
+                    if (value && typeof value === "object" && property[0] !== '$') {
+                        return new Proxy(value, cancelHandler);
+                    } else {
+                        return value;
                     }
                 }
-            })(watchers);
+            };
+
+            return jexl.eval(expression, new Proxy(this, cancelHandler));
         };
 
         return promise;
