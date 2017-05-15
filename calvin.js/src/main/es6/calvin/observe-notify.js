@@ -105,10 +105,9 @@ export class ObservableRootHandler extends ObservableHandler {
         console.log("watching:", this.path(), this);
 
         let $scope = this.$self;
-        let current;
 
         function notify(path) {
-            jexl.eval(expression, $scope).then(items => callback(items, current)).catch(error => {
+            jexl.eval(expression, $scope).then(items => callback(items, {path})).catch(error => {
                 console.error(error);
             });
         }
@@ -131,7 +130,7 @@ export class ObservableRootHandler extends ObservableHandler {
             }
         };
 
-        let promise = jexl.eval(expression, new Proxy(this, watchHandler)).then(result => current = result);
+        let promise = jexl.eval(expression, new Proxy(this, watchHandler));
 
         promise.cancel = () => {
 

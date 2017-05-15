@@ -8,11 +8,11 @@
     </style>
     <script src="globals.js"></script>
     <script src="lib/jquery/dist/jquery.min.js"></script>
-    <script src="lib/webcomponentsjs/webcomponents-lite.js"></script>
-    <!--<script src="/node_modules/custom-attributes/attr.js"></script>-->
+    <!--<script src="lib/webcomponentsjs/webcomponents-lite.js"></script>-->
 </head>
 <body>
 <template id="report-template">
+    <div for-each="i in [0, 1, 2, 3]">
     <paper-report format="A4" orientation="landscape">
         <report-page id="p1" title="Title Page">
             <page-header style="background-color: red">
@@ -21,7 +21,7 @@
                 <div></div>
             </page-header>
             <page-body style="background-color: white">
-                Italia
+                <div >Italia</div>
             </page-body>
             <page-footer style="background-color: green">
                 <div></div>
@@ -30,7 +30,7 @@
             </page-footer>
         </report-page>
         <for-each item="page" in="report.chapters[0] union report.chapters[2]">
-            <!-- Comment Before -->
+            <!-- Comment -->
             <report-page title="Second Page Template">
                 <page-header style="background-color: red">
                     <div>First</div>
@@ -46,9 +46,10 @@
                     <div>pg. {{page.number}}</div>
                 </page-footer>
             </report-page>
-            <!-- Comment After -->
+            <!-- Comment -->
         </for-each>
     </paper-report>
+    </div>
 </template>
 <script src="/node_modules/bluebird/js/browser/bluebird.min.js"></script>
 <script src="/node_modules/systemjs/dist/system.js"></script>
@@ -59,7 +60,7 @@
 
 <script type="text/javascript">
 
-    window.addEventListener('WebComponentsReady', function (e) {
+//    window.addEventListener('WebComponentsReady', function (e) {
 
         console.log('components ready');
 
@@ -99,7 +100,7 @@
 
         }, console.error.bind(console));
 
-    });
+//    });
 
 </script>
 </body>

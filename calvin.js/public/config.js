@@ -2,7 +2,8 @@ SystemJS.config({
     baseURL: '/node_modules',
     map: {
         "calvin": "/babel/calvin",
-        "decorators": "/babel/decorators"
+        "decorators": "/babel/decorators",
+        "custom-attributes": "/babel/custom-attributes"
     },
     packages: {
         'calvin': {
@@ -11,6 +12,10 @@ SystemJS.config({
             defaultExtension: 'js'
         },
         'decorators': {
+            format: 'system',
+            defaultExtension: 'js'
+        },
+        'custom-attributes': {
             format: 'system',
             defaultExtension: 'js'
         }

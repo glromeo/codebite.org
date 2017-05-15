@@ -1,3 +1,4 @@
+import "calvin/custom-attributes";
 import "calvin/custom-elements";
 import {ObservableRootHandler} from "./observe-notify";
 import {closest, visitTree} from "./utility";

@@ -2,13 +2,13 @@ import {appendCallback, closest, visitTree} from "calvin/utility";
 import {CustomElement} from "decorators/@CustomElement";
 import {createScope} from "./main";
 
-const debug = false;
+const debug = true;
 
 class PaperElement extends HTMLElement {
 
     constructor() {
         super();
-        if (debug) console.debug("created new PaperItem:", this.tagName);
+        if (debug) console.debug("created new PaperElement:", this.tagName);
     }
 
     connectedCallback() {
@@ -131,23 +131,6 @@ class ForEach extends PaperElement {
 
     render() {
 
-        let template = this.template;
-
-        const $item = this.item;
-        const $index = "$index";
-
-        let rendered = [];
-
-        function renderItem($scope, [item, index]) {
-            let clone = template.cloneNode(true);
-            createScope(clone, {
-                [$item]: item,
-                [$index]: index
-            });
-            rendered[index] = Array.from(clone.childNodes);
-            return clone;
-        }
-
         let $scope = closest("$scope", this);
 
         let placeholder = createPlaceholder.call(this, ' begin of: ');
@@ -161,43 +144,39 @@ class ForEach extends PaperElement {
 
             fragment.appendChild(placeholder);
 
-            rendered.length = 0;
-
             if (Array.isArray(items)) {
                 items.forEach((item, index) => {
-                    fragment.appendChild(renderItem($scope, [item, index]));
+                    fragment.appendChild(this.renderItem($scope, [item, index]));
                 });
             } else if (items) {
                 Object.keys(items).forEach((key) => {
-                    fragment.appendChild(renderItem($scope, [items[key], key]));
+                    fragment.appendChild(this.renderItem($scope, [items[key], key]));
                 });
             }
             fragment.appendChild(marker);
 
             this.parentNode.replaceChild(fragment, this);
 
-            console.log("rendered:", rendered);
-
             placeholder.cleanUpCallback = () => {
                 console.log("clean up:", this);
             }
         };
 
-        let update = (newItems, oldItems) => {
+        let update = (items) => {
 
             let parentNode = marker.parentNode;
 
-            oldItems.forEach(index => rendered[index].forEach(node => {
-                parentNode.removeChild(node);
-            }));
+            while (placeholder.nextSibling !== marker) {
+                parentNode.removeChild(placeholder.nextSibling);
+            }
 
-            if (Array.isArray(newItems)) {
-                newItems.forEach((item, index) => {
-                    fragment.appendChild(renderItem($scope, [item, index]));
+            if (Array.isArray(items)) {
+                items.forEach((item, index) => {
+                    fragment.appendChild(this.renderItem($scope, [item, index]));
                 });
-            } else if (newItems) {
-                Object.keys(newItems).forEach((key) => {
-                    fragment.appendChild(renderItem($scope, [newItems[key], key]));
+            } else if (items) {
+                Object.keys(items).forEach((key) => {
+                    fragment.appendChild(this.renderItem($scope, [items[key], key]));
                 });
             }
 
@@ -210,6 +189,15 @@ class ForEach extends PaperElement {
         }).then(create).catch(reason => {
             console.error(reason);
         });
+    }
+
+    renderItem($scope, [item, index]) {
+        let clone = this.template.cloneNode(true);
+        createScope(clone, {
+            [this.item]: item,
+            "$index": index
+        });
+        return clone;
     }
 }
 
