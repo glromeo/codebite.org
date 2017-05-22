@@ -1,5 +1,5 @@
 import {appendCallback, closest, visitTree} from "calvin/utility";
-import {CustomElement} from "decorators/@CustomElement";
+import CustomElement from "decorators/@CustomElement";
 import {createScope} from "./main";
 
 const debug = true;
@@ -40,7 +40,8 @@ class PaperElement extends HTMLElement {
         }
 
         if (this.render) {
-            let promise = this.render();
+            let $scope = closest("$scope", this);
+            let promise = this.render($scope);
             if (promise) {
                 promise.then(() => this.readyCallback());
             } else if (this.readyCallback) {
@@ -129,9 +130,7 @@ class ForEach extends PaperElement {
         this.item = this.getAttribute("item");
     }
 
-    render() {
-
-        let $scope = closest("$scope", this);
+    render($scope) {
 
         let placeholder = createPlaceholder.call(this, ' begin of: ');
         let marker = createPlaceholder.call(this, ' end of: ');

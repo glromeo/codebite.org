@@ -1,201 +1,201 @@
-import CustomAttributeInternals from './CustomAttributeInternals.js';
-import DocumentConstructionObserver from './DocumentConstructionObserver.js';
-import Deferred from './Deferred.js';
-import * as Utilities from './Utilities.js';
+import CustomAttributeInternals from "./CustomAttributeInternals.js";
+import DocumentConstructionObserver from "./DocumentConstructionObserver.js";
+import Deferred from "./Deferred.js";
+import * as Utilities from "./Utilities.js";
 
 /**
  * @unrestricted
  */
 export default class CustomAttributeRegistry {
 
-  /**
-   * @param {!CustomAttributeInternals} internals
-   */
-  constructor(internals) {
     /**
-     * @private
-     * @type {boolean}
+     * @param {!CustomAttributeInternals} internals
      */
-    this._elementDefinitionIsRunning = false;
+    constructor(internals) {
+        /**
+         * @private
+         * @type {boolean}
+         */
+        this._attributeDefinitionIsRunning = false;
 
-    /**
-     * @private
-     * @type {!CustomAttributeInternals}
-     */
-    this._internals = internals;
+        /**
+         * @private
+         * @type {!CustomAttributeInternals}
+         */
+        this._internals = internals;
 
-    /**
-     * @private
-     * @type {!Map<string, !Deferred<undefined>>}
-     */
-    this._whenDefinedDeferred = new Map();
+        /**
+         * @private
+         * @type {!Map<string, !Deferred<undefined>>}
+         */
+        this._whenDefinedDeferred = new Map();
 
-    /**
-     * The default flush callback triggers the document walk synchronously.
-     * @private
-     * @type {!Function}
-     */
-    this._flushCallback = fn => fn();
+        /**
+         * The default flush callback triggers the document walk synchronously.
+         * @private
+         * @type {!Function}
+         */
+        this._flushCallback = fn => fn();
 
-    /**
-     * @private
-     * @type {boolean}
-     */
-    this._flushPending = false;
+        /**
+         * @private
+         * @type {boolean}
+         */
+        this._flushPending = false;
 
-    /**
-     * @private
-     * @type {!Array<string>}
-     */
-    this._unflushedLocalNames = [];
+        /**
+         * @private
+         * @type {!Array<string>}
+         */
+        this._unflushedLocalNames = [];
 
-    /**
-     * @private
-     * @type {!DocumentConstructionObserver}
-     */
-    this._documentConstructionObserver = new DocumentConstructionObserver(internals, document);
-  }
-
-  /**
-   * @param {string} localName
-   * @param {!Function} constructor
-   */
-  define(localName, constructor) {
-    if (!(constructor instanceof Function)) {
-      throw new TypeError('Custom element constructors must be functions.');
+        /**
+         * @private
+         * @type {!DocumentConstructionObserver}
+         */
+        this._documentConstructionObserver = new DocumentConstructionObserver(internals, document);
     }
 
-    if (!Utilities.isValidCustomAttributeName(localName)) {
-      throw new SyntaxError(`The element name '${localName}' is not valid.`);
-    }
-
-    if (this._internals.localNameToDefinition(localName)) {
-      throw new Error(`A custom element with name '${localName}' has already been defined.`);
-    }
-
-    if (this._elementDefinitionIsRunning) {
-      throw new Error('A custom element is already being defined.');
-    }
-    this._elementDefinitionIsRunning = true;
-
-    let connectedCallback;
-    let disconnectedCallback;
-    let adoptedCallback;
-    let attributeChangedCallback;
-    let observedAttributes;
-    try {
-      /** @type {!Object} */
-      const prototype = constructor.prototype;
-      if (!(prototype instanceof Object)) {
-        throw new TypeError('The custom element constructor\'s prototype is not an object.');
-      }
-
-      function getCallback(name) {
-        const callbackValue = prototype[name];
-        if (callbackValue !== undefined && !(callbackValue instanceof Function)) {
-          throw new Error(`The '${name}' callback must be a function.`);
+    /**
+     * @param {string} localName
+     * @param {!Function} constructor
+     */
+    define(localName, constructor) {
+        if (!(constructor instanceof Function)) {
+            throw new TypeError('Custom attribute constructors must be functions.');
         }
-        return callbackValue;
-      }
 
-      connectedCallback = getCallback('connectedCallback');
-      disconnectedCallback = getCallback('disconnectedCallback');
-      adoptedCallback = getCallback('adoptedCallback');
-      attributeChangedCallback = getCallback('attributeChangedCallback');
-      observedAttributes = constructor['observedAttributes'] || [];
-    } catch (e) {
-      return;
-    } finally {
-      this._elementDefinitionIsRunning = false;
+        if (!Utilities.isValidCustomAttributeName(localName)) {
+            throw new SyntaxError(`The attribute name '${localName}' is not valid.`);
+        }
+
+        if (this._internals.localNameToDefinition(localName)) {
+            throw new Error(`A custom attribute with name '${localName}' has already been defined.`);
+        }
+
+        if (this._attributeDefinitionIsRunning) {
+            throw new Error('A custom attribute is already being defined.');
+        }
+        this._attributeDefinitionIsRunning = true;
+
+        let connectedCallback;
+        let disconnectedCallback;
+        let adoptedCallback;
+        let attributeChangedCallback;
+        let observedAttributes;
+        try {
+            /** @type {!Object} */
+            const prototype = constructor.prototype;
+            if (!(prototype instanceof Object)) {
+                throw new TypeError('The custom attribute constructor\'s prototype is not an object.');
+            }
+
+            function getCallback(name) {
+                const callbackValue = prototype[name];
+                if (callbackValue !== undefined && !(callbackValue instanceof Function)) {
+                    throw new Error(`The '${name}' callback must be a function.`);
+                }
+                return callbackValue;
+            }
+
+            connectedCallback = getCallback('connectedCallback');
+            disconnectedCallback = getCallback('disconnectedCallback');
+            adoptedCallback = getCallback('adoptedCallback');
+            attributeChangedCallback = getCallback('attributeChangedCallback');
+            observedAttributes = constructor['observedAttributes'] || [];
+        } catch (e) {
+            return;
+        } finally {
+            this._attributeDefinitionIsRunning = false;
+        }
+
+        const definition = {
+            localName,
+            constructor,
+            connectedCallback,
+            disconnectedCallback,
+            adoptedCallback,
+            attributeChangedCallback,
+            observedAttributes,
+            constructionStack: [],
+        };
+
+        this._internals.setDefinition(localName, definition);
+
+        this._unflushedLocalNames.push(localName);
+
+        // If we've already called the flush callback and it hasn't called back yet,
+        // don't call it again.
+        if (!this._flushPending) {
+            this._flushPending = true;
+            this._flushCallback(() => this._flush());
+        }
     }
 
-    const definition = {
-      localName,
-      constructor,
-      connectedCallback,
-      disconnectedCallback,
-      adoptedCallback,
-      attributeChangedCallback,
-      observedAttributes,
-      constructionStack: [],
-    };
+    _flush() {
+        // If no new definitions were defined, don't attempt to flush. This could
+        // happen if a flush callback keeps the function it is given and calls it
+        // multiple times.
+        if (this._flushPending === false) return;
 
-    this._internals.setDefinition(localName, definition);
+        this._flushPending = false;
+        this._internals.patchAndUpgradeTree(document);
 
-    this._unflushedLocalNames.push(localName);
-
-    // If we've already called the flush callback and it hasn't called back yet,
-    // don't call it again.
-    if (!this._flushPending) {
-      this._flushPending = true;
-      this._flushCallback(() => this._flush());
-    }
-  }
-
-  _flush() {
-    // If no new definitions were defined, don't attempt to flush. This could
-    // happen if a flush callback keeps the function it is given and calls it
-    // multiple times.
-    if (this._flushPending === false) return;
-
-    this._flushPending = false;
-    this._internals.patchAndUpgradeTree(document);
-
-    while (this._unflushedLocalNames.length > 0) {
-      const localName = this._unflushedLocalNames.shift();
-      const deferred = this._whenDefinedDeferred.get(localName);
-      if (deferred) {
-        deferred.resolve(undefined);
-      }
-    }
-  }
-
-  /**
-   * @param {string} localName
-   * @return {Function|undefined}
-   */
-  get(localName) {
-    const definition = this._internals.localNameToDefinition(localName);
-    if (definition) {
-      return definition.constructor;
+        while (this._unflushedLocalNames.length > 0) {
+            const localName = this._unflushedLocalNames.shift();
+            const deferred = this._whenDefinedDeferred.get(localName);
+            if (deferred) {
+                deferred.resolve(undefined);
+            }
+        }
     }
 
-    return undefined;
-  }
+    /**
+     * @param {string} localName
+     * @return {Function|undefined}
+     */
+    get(localName) {
+        const definition = this._internals.localNameToDefinition(localName);
+        if (definition) {
+            return definition.constructor;
+        }
 
-  /**
-   * @param {string} localName
-   * @return {!Promise<undefined>}
-   */
-  whenDefined(localName) {
-    if (!Utilities.isValidCustomAttributeName(localName)) {
-      return Promise.reject(new SyntaxError(`'${localName}' is not a valid custom element name.`));
+        return undefined;
     }
 
-    const prior = this._whenDefinedDeferred.get(localName);
-    if (prior) {
-      return prior.toPromise();
+    /**
+     * @param {string} localName
+     * @return {!Promise<undefined>}
+     */
+    whenDefined(localName) {
+        if (!Utilities.isValidCustomAttributeName(localName)) {
+            return Promise.reject(new SyntaxError(`'${localName}' is not a valid custom element name.`));
+        }
+
+        const prior = this._whenDefinedDeferred.get(localName);
+        if (prior) {
+            return prior.toPromise();
+        }
+
+        const deferred = new Deferred();
+        this._whenDefinedDeferred.set(localName, deferred);
+
+        const definition = this._internals.localNameToDefinition(localName);
+        // Resolve immediately only if the given local name has a definition *and*
+        // the full document walk to upgrade elements with that local name has
+        // already happened.
+        if (definition && this._unflushedLocalNames.indexOf(localName) === -1) {
+            deferred.resolve(undefined);
+        }
+
+        return deferred.toPromise();
     }
 
-    const deferred = new Deferred();
-    this._whenDefinedDeferred.set(localName, deferred);
-
-    const definition = this._internals.localNameToDefinition(localName);
-    // Resolve immediately only if the given local name has a definition *and*
-    // the full document walk to upgrade elements with that local name has
-    // already happened.
-    if (definition && this._unflushedLocalNames.indexOf(localName) === -1) {
-      deferred.resolve(undefined);
+    polyfillWrapFlushCallback(outer) {
+        this._documentConstructionObserver.disconnect();
+        const inner = this._flushCallback;
+        this._flushCallback = flush => outer(() => inner(flush));
     }
-
-    return deferred.toPromise();
-  }
-
-  polyfillWrapFlushCallback(outer) {
-    this._documentConstructionObserver.disconnect();
-    const inner = this._flushCallback;
-    this._flushCallback = flush => outer(() => inner(flush));
-  }
 }
 
 // Closure compiler exports.

@@ -3,7 +3,8 @@ SystemJS.config({
     map: {
         "calvin": "/babel/calvin",
         "decorators": "/babel/decorators",
-        "custom-attributes": "/babel/custom-attributes"
+        "custom-attributes": "/babel/custom-attributes",
+        "mocha": "/mocha"
     },
     packages: {
         'calvin': {
@@ -16,6 +17,10 @@ SystemJS.config({
             defaultExtension: 'js'
         },
         'custom-attributes': {
+            format: 'system',
+            defaultExtension: 'js'
+        },
+        'mocha': {
             format: 'system',
             defaultExtension: 'js'
         }

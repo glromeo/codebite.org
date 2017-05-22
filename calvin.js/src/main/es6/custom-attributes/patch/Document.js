@@ -1,11 +1,12 @@
 import PatchParentNode from "./Interface/ParentNode.js";
 import Native from "./Native.js";
+import * as ca from "../Utilities.js";
 
 export default function (internals) {
 
     Document.prototype['importNode'] = function (node, deep) {
 
-        console.log("importNode", node);
+        ca.log.call(this, "importNode", node, deep);
 
         const clone = Native.Document.importNode.call(this, node, deep);
 

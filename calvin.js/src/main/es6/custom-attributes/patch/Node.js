@@ -1,77 +1,77 @@
-import Native from './Native.js';
-import CustomAttributeInternals from '../CustomAttributeInternals.js';
-import * as Utilities from '../Utilities.js';
+import Native from "./Native.js";
+import * as ca from "../Utilities.js";
+import {CUSTOM_ATTRIBUTES} from "custom-attributes/custom-attributes";
 
-/**
- * @param {!CustomAttributeInternals} internals
- */
-export default function(internals) {
-  // `Node#nodeValue` is implemented on `Attr`.
-  // `Node#textContent` is implemented on `Attr`, `Element`.
+export default function (internals) {
 
-  Node.prototype['insertBefore'] = /**
-     * @this {Node}
-     * @param {!Node} node
-     * @param {?Node} refNode
-     * @return {!Node}
-     */
-        function (node, refNode) {
+    // `Node#nodeValue` is implemented on `Attr`.
+    // `Node#textContent` is implemented on `Attr`, `Element`.
+
+    Node.prototype['insertBefore'] = function (node, refNode) {
+
+        ca.log.call(this, "insertBefore", node, refNode);
+
         if (node instanceof DocumentFragment) {
             const insertedNodes = Array.prototype.slice.apply(node.childNodes);
             const nativeResult = Native.Node.insertBefore.call(this, node, refNode);
             // DocumentFragments can't be connected, so `disconnectTree` will never
             // need to be called on a DocumentFragment's children after inserting it.
-            if (Utilities.isConnected(this)) {
+            if (ca.isConnected(this)) {
                 for (let i = 0; i < insertedNodes.length; i++) {
                     internals.connectTree(insertedNodes[i]);
                 }
             }
             return nativeResult;
         }
-        const nodeWasConnected = Utilities.isConnected(node);
+        const nodeWasConnected = ca.isConnected(node);
         const nativeResult = Native.Node.insertBefore.call(this, node, refNode);
         if (nodeWasConnected) {
             internals.disconnectTree(node);
         }
-        if (Utilities.isConnected(this)) {
+        if (ca.isConnected(this)) {
             internals.connectTree(node);
         }
         return nativeResult;
     };
-    Node.prototype['appendChild'] = /**
-     * @this {Node}
-     * @param {!Node} node
-     * @return {!Node}
-     */
-        function (node) {
-        if (node instanceof DocumentFragment) {
-            const insertedNodes = Array.prototype.slice.apply(node.childNodes);
-            const nativeResult = Native.Node.appendChild.call(this, node);
-            // DocumentFragments can't be connected, so `disconnectTree` will never
-            // need to be called on a DocumentFragment's children after inserting it.
-            if (Utilities.isConnected(this)) {
-                for (let i = 0; i < insertedNodes.length; i++) {
-                    internals.connectTree(insertedNodes[i]);
+
+    Node.prototype['appendChild'] = function (node) {
+
+        ca.log.call(this, "appendChild", node);
+
+        // if (node instanceof DocumentFragment) {
+        //     const insertedNodes = Array.prototype.slice.apply(node.childNodes);
+        //     const nativeResult = Native.Node.appendChild.call(this, node);
+        //     // DocumentFragments can't be connected, so `disconnectTree` will never
+        //     // need to be called on a DocumentFragment's children after inserting it.
+        //     if (ca.isConnected(this)) {
+        //         for (let i = 0; i < insertedNodes.length; i++) {
+        //             internals.connectTree(insertedNodes[i]);
+        //         }
+        //     }
+        //     return nativeResult;
+        // }
+        //
+        // const nodeWasConnected = ca.isConnected(node);
+
+        let customAttributes = node[CUSTOM_ATTRIBUTES];
+        if (customAttributes) {
+            let target = this;
+            for (let [name, customAttribute] of customAttributes) {
+                let template = customAttribute.template;
+                if (template) {
+                    Native.Node.appendChild.call(target, template);
+                    target = template.content;
                 }
             }
-            return nativeResult;
+            return Native.Node.appendChild.call(target, node);
         }
-        const nodeWasConnected = Utilities.isConnected(node);
-        const nativeResult = Native.Node.appendChild.call(this, node);
-        if (nodeWasConnected) {
-            internals.disconnectTree(node);
-        }
-        if (Utilities.isConnected(this)) {
-            internals.connectTree(node);
-        }
-        return nativeResult;
+        return Native.Node.appendChild.call(this, node);
     };
-    Node.prototype['cloneNode'] = /**
-     * @this {Node}
-     * @param {boolean=} deep
-     * @return {!Node}
-     */
-        function (deep) {
+
+    Node.prototype['cloneNode'] = function (deep) {
+
+        ca.log.call(this, "cloneNode", deep);
+
         const clone = Native.Node.cloneNode.call(this, deep);
         // Only create custom elements if this element's owner document is
         // associated with the registry.
@@ -82,32 +82,29 @@ export default function(internals) {
         }
         return clone;
     };
-    Node.prototype['removeChild'] = /**
-     * @this {Node}
-     * @param {!Node} node
-     * @return {!Node}
-     */
-        function (node) {
-        const nodeWasConnected = Utilities.isConnected(node);
+
+    Node.prototype['removeChild'] = function (node) {
+
+        ca.log.call(this, "removeChild", node);
+
+        const nodeWasConnected = ca.isConnected(node);
         const nativeResult = Native.Node.removeChild.call(this, node);
         if (nodeWasConnected) {
             internals.disconnectTree(node);
         }
         return nativeResult;
     };
-    Node.prototype['replaceChild'] = /**
-     * @this {Node}
-     * @param {!Node} nodeToInsert
-     * @param {!Node} nodeToRemove
-     * @return {!Node}
-     */
-        function (nodeToInsert, nodeToRemove) {
+
+    Node.prototype['replaceChild'] = function (nodeToInsert, nodeToRemove) {
+
+        ca.log.call(this, "replaceChild", nodeToInsert, nodeToRemove);
+
         if (nodeToInsert instanceof DocumentFragment) {
             const insertedNodes = Array.prototype.slice.apply(nodeToInsert.childNodes);
             const nativeResult = Native.Node.replaceChild.call(this, nodeToInsert, nodeToRemove);
             // DocumentFragments can't be connected, so `disconnectTree` will never
             // need to be called on a DocumentFragment's children after inserting it.
-            if (Utilities.isConnected(this)) {
+            if (ca.isConnected(this)) {
                 internals.disconnectTree(nodeToRemove);
                 for (let i = 0; i < insertedNodes.length; i++) {
                     internals.connectTree(insertedNodes[i]);
@@ -115,9 +112,9 @@ export default function(internals) {
             }
             return nativeResult;
         }
-        const nodeToInsertWasConnected = Utilities.isConnected(nodeToInsert);
+        const nodeToInsertWasConnected = ca.isConnected(nodeToInsert);
         const nativeResult = Native.Node.replaceChild.call(this, nodeToInsert, nodeToRemove);
-        const thisIsConnected = Utilities.isConnected(this);
+        const thisIsConnected = ca.isConnected(this);
         if (thisIsConnected) {
             internals.disconnectTree(nodeToRemove);
         }
@@ -129,72 +126,41 @@ export default function(internals) {
         }
         return nativeResult;
     };
-    function patch_textContent(destination, baseDescriptor) {
-    Object.defineProperty(destination, 'textContent', {
-      enumerable: baseDescriptor.enumerable,
-      configurable: true,
-      get: baseDescriptor.get,
-      set: /** @this {Node} */ function(assignedValue) {
-        // If this is a text node then there are no nodes to disconnect.
-        if (this.nodeType === Node.TEXT_NODE) {
-          baseDescriptor.set.call(this, assignedValue);
-          return;
-        }
 
-        let removedNodes = undefined;
-        // Checking for `firstChild` is faster than reading `childNodes.length`
-        // to compare with 0.
-        if (this.firstChild) {
-          // Using `childNodes` is faster than `children`, even though we only
-          // care about elements.
-          const childNodes = this.childNodes;
-          const childNodesLength = childNodes.length;
-          if (childNodesLength > 0 && Utilities.isConnected(this)) {
-            // Copying an array by iterating is faster than using slice.
-            removedNodes = new Array(childNodesLength);
-            for (let i = 0; i < childNodesLength; i++) {
-              removedNodes[i] = childNodes[i];
-            }
-          }
-        }
-
-        baseDescriptor.set.call(this, assignedValue);
-
-        if (removedNodes) {
-          for (let i = 0; i < removedNodes.length; i++) {
-            internals.disconnectTree(removedNodes[i]);
-          }
-        }
-      },
-    });
-  }
-
-  if (Native.Node.textContent && Native.Node.textContent.get) {
-    patch_textContent(Node.prototype, Native.Node.textContent);
-  } else {
-    internals.addPatch(function(element) {
-      patch_textContent(element, {
-        enumerable: true,
+    Object.defineProperty(Node.prototype, 'textContent', {
+        enumerable: Native.Node.textContent.enumerable,
         configurable: true,
-        // NOTE: This implementation of the `textContent` getter assumes that
-        // text nodes' `textContent` getter will not be patched.
-        get: /** @this {Node} */ function() {
-          /** @type {!Array<string>} */
-          const parts = [];
+        get: Native.Node.textContent.get,
+        set: function (assignedValue) {
 
-          for (let i = 0; i < this.childNodes.length; i++) {
-            parts.push(this.childNodes[i].textContent);
-          }
+            ca.log.call(this, "set textContent", assignedValue);
 
-          return parts.join('');
+            // If this is a text node then there are no nodes to disconnect.
+            if (this.nodeType === Node.TEXT_NODE) {
+                Native.Node.textContent.set.call(this, assignedValue);
+            }
+            let removedNodes = undefined;
+            // Checking for `firstChild` is faster than reading `childNodes.length`
+            // to compare with 0.
+            if (this.firstChild) {
+                // Using `childNodes` is faster than `children`, even though we only
+                // care about elements.
+                const childNodes = this.childNodes;
+                const childNodesLength = childNodes.length;
+                if (childNodesLength > 0 && ca.isConnected(this)) {
+                    // Copying an array by iterating is faster than using slice.
+                    removedNodes = new Array(childNodesLength);
+                    for (let i = 0; i < childNodesLength; i++) {
+                        removedNodes[i] = childNodes[i];
+                    }
+                }
+            }
+            Native.Node.textContent.set.call(this, assignedValue);
+            if (removedNodes) {
+                for (let i = 0; i < removedNodes.length; i++) {
+                    internals.disconnectTree(removedNodes[i]);
+                }
+            }
         },
-        set: /** @this {Node} */ function(assignedValue) {
-          while (this.firstChild) {
-            Native.Node.removeChild.call(this, this.firstChild);
-          }
-          Native.Node.appendChild.call(this, document.createTextNode(assignedValue));
-        },
-      });
     });
-  }
 };

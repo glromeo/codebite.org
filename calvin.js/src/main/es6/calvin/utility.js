@@ -7,13 +7,13 @@ export function dashCase(str) {
     return str.replace(DASH_REGEX, function (match) {
         return '-' + match.toLowerCase();
     });
-};
+}
 
 export function camelCase(str) {
     return str.replace(REVERSE_REGEX, function (match) {
         return match.slice(1).toUpperCase();
     });
-};
+}
 
 export function closest(name, fromNode, callback) {
     do {

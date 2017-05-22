@@ -1,23 +1,22 @@
-import CustomAttributeInternals from './CustomAttributeInternals.js';
-import CustomAttributeRegistry from './CustomAttributeRegistry.js';
+import CustomAttributeRegistry from './custom-attribute-registry';
 
-import patchDocument from './patch/Document.js';
-import patchNode from './patch/Node.js';
-import patchElement from './patch/Element.js';
+import patchDocument from './patch/patch-document';
+import patchNode from './patch/patch-node';
+import patchElement from './patch/patch-element';
 
 if (!window['customAttributes']) {
 
-  const internals = new CustomAttributeInternals();
+    const registry = new CustomAttributeRegistry();
 
-  patchDocument(internals);
-  patchNode(internals);
-  patchElement(internals);
+    Object.defineProperty(window, 'customAttributes', {
+        configurable: true,
+        enumerable: true,
+        value: registry,
+    });
 
-  Object.defineProperty(window, 'customAttributes', {
-    configurable: true,
-    enumerable: true,
-    value: new CustomAttributeRegistry(internals),
-  });
+    patchDocument(registry);
+    patchNode(registry);
+    patchElement(registry);
 }
 
 export default window['customAttributes'];

@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <link rel="shortcut icon" href="images/cobra.png">
+    <link href="lib/mocha/mocha.css" rel="stylesheet"/>
+    <script src="globals.js"></script>
+    <script src="lib/jquery/dist/jquery.min.js"></script>
+    <script src="lib/webcomponentsjs/webcomponents-lite.js"></script>
+</head>
+<body>
+<div id="mocha"></div>
+<script src="/node_modules/bluebird/js/browser/bluebird.min.js"></script>
+<script src="/node_modules/systemjs/dist/system.js"></script>
+<script src="config.js"></script>
+<script src="lib/mocha/mocha.js"></script>
+<script src="lib/chai/chai.js"></script>
+<script type="text/javascript">
+    mocha.setup('bdd');
+</script>
+<script type="text/javascript">
+    SystemJS.import('calvin').then(function (elements) {
+
+        elements.bootstrap(document.querySelector('HTML'));
+
+        mocha.checkLeaks();
+
+        mocha.globals(['jQuery']);
+
+        Promise.all([
+            SystemJS.import('mocha/custom-attribute-registry.tests.js'),
+            SystemJS.import('mocha/dom-patching.tests.js')
+        ]).then(function () {
+            mocha.run();
+        });
+
+    }, console.error.bind(console));
+</script>
+</body>
+</html>

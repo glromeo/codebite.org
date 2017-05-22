@@ -1,110 +1,98 @@
-import CustomAttributeInternals from '../../CustomAttributeInternals.js';
-import * as Utilities from '../../Utilities.js';
+import * as ca from "../../Utilities.js";
 
-/**
- * @typedef {{
- *   before: !function(...(!Node|string)),
- *   after: !function(...(!Node|string)),
- *   replaceWith: !function(...(!Node|string)),
- *   remove: !function(),
- * }}
- */
-let ChildNodeNativeMethods;
+export default function (internals, destination, builtIn) {
 
-/**
- * @param {!CustomAttributeInternals} internals
- * @param {!Object} destination
- * @param {!ChildNodeNativeMethods} builtIn
- */
-export default function(internals, destination, builtIn) {
-  /**
-   * @param {...(!Node|string)} nodes
-   */
-  destination['before'] = function(...nodes) {
-    // TODO: Fix this for when one of `nodes` is a DocumentFragment!
-    const connectedBefore = /** @type {!Array<!Node>} */ (nodes.filter(node => {
-      // DocumentFragments are not connected and will not be added to the list.
-      return node instanceof Node && Utilities.isConnected(node);
-    }));
+    destination['before'] = function (...nodes) {
 
-    builtIn.before.apply(this, nodes);
+        ca.log.call(this, "before", ...nodes);
 
-    for (let i = 0; i < connectedBefore.length; i++) {
-      internals.disconnectTree(connectedBefore[i]);
-    }
+        // TODO: Fix this for when one of `nodes` is a DocumentFragment!
+        const connectedBefore = (nodes.filter(node => {
+            // DocumentFragments are not connected and will not be added to the list.
+            return node instanceof Node && ca.isConnected(node);
+        }));
 
-    if (Utilities.isConnected(this)) {
-      for (let i = 0; i < nodes.length; i++) {
-        const node = nodes[i];
-        if (node instanceof Element) {
-          internals.connectTree(node);
+        builtIn.before.apply(this, nodes);
+
+        for (let i = 0; i < connectedBefore.length; i++) {
+            internals.disconnectTree(connectedBefore[i]);
         }
-      }
-    }
-  };
 
-  /**
-   * @param {...(!Node|string)} nodes
-   */
-  destination['after'] = function(...nodes) {
-    // TODO: Fix this for when one of `nodes` is a DocumentFragment!
-    const connectedBefore = /** @type {!Array<!Node>} */ (nodes.filter(node => {
-      // DocumentFragments are not connected and will not be added to the list.
-      return node instanceof Node && Utilities.isConnected(node);
-    }));
-
-    builtIn.after.apply(this, nodes);
-
-    for (let i = 0; i < connectedBefore.length; i++) {
-      internals.disconnectTree(connectedBefore[i]);
-    }
-
-    if (Utilities.isConnected(this)) {
-      for (let i = 0; i < nodes.length; i++) {
-        const node = nodes[i];
-        if (node instanceof Element) {
-          internals.connectTree(node);
+        if (ca.isConnected(this)) {
+            for (let i = 0; i < nodes.length; i++) {
+                const node = nodes[i];
+                if (node instanceof Element) {
+                    internals.connectTree(node);
+                }
+            }
         }
-      }
-    }
-  };
+    };
 
-  /**
-   * @param {...(!Node|string)} nodes
-   */
-  destination['replaceWith'] = function(...nodes) {
-    // TODO: Fix this for when one of `nodes` is a DocumentFragment!
-    const connectedBefore = /** @type {!Array<!Node>} */ (nodes.filter(node => {
-      // DocumentFragments are not connected and will not be added to the list.
-      return node instanceof Node && Utilities.isConnected(node);
-    }));
+    destination['after'] = function (...nodes) {
 
-    const wasConnected = Utilities.isConnected(this);
+        ca.log.call(this, "after", ...nodes);
 
-    builtIn.replaceWith.apply(this, nodes);
+        // TODO: Fix this for when one of `nodes` is a DocumentFragment!
+        const connectedBefore = (nodes.filter(node => {
+            // DocumentFragments are not connected and will not be added to the list.
+            return node instanceof Node && ca.isConnected(node);
+        }));
 
-    for (let i = 0; i < connectedBefore.length; i++) {
-      internals.disconnectTree(connectedBefore[i]);
-    }
+        builtIn.after.apply(this, nodes);
 
-    if (wasConnected) {
-      internals.disconnectTree(this);
-      for (let i = 0; i < nodes.length; i++) {
-        const node = nodes[i];
-        if (node instanceof Element) {
-          internals.connectTree(node);
+        for (let i = 0; i < connectedBefore.length; i++) {
+            internals.disconnectTree(connectedBefore[i]);
         }
-      }
-    }
-  };
 
-  destination['remove'] = function() {
-    const wasConnected = Utilities.isConnected(this);
+        if (ca.isConnected(this)) {
+            for (let i = 0; i < nodes.length; i++) {
+                const node = nodes[i];
+                if (node instanceof Element) {
+                    internals.connectTree(node);
+                }
+            }
+        }
+    };
 
-    builtIn.remove.call(this);
+    destination['replaceWith'] = function (...nodes) {
 
-    if (wasConnected) {
-      internals.disconnectTree(this);
-    }
-  };
+        ca.log.call(this, "replaceWith", ...nodes);
+
+        // TODO: Fix this for when one of `nodes` is a DocumentFragment!
+        const connectedBefore = (nodes.filter(node => {
+            // DocumentFragments are not connected and will not be added to the list.
+            return node instanceof Node && ca.isConnected(node);
+        }));
+
+        const wasConnected = ca.isConnected(this);
+
+        builtIn.replaceWith.apply(this, nodes);
+
+        for (let i = 0; i < connectedBefore.length; i++) {
+            internals.disconnectTree(connectedBefore[i]);
+        }
+
+        if (wasConnected) {
+            internals.disconnectTree(this);
+            for (let i = 0; i < nodes.length; i++) {
+                const node = nodes[i];
+                if (node instanceof Element) {
+                    internals.connectTree(node);
+                }
+            }
+        }
+    };
+
+    destination['remove'] = function () {
+
+        ca.log.call(this, "remove");
+
+        const wasConnected = ca.isConnected(this);
+
+        builtIn.remove.call(this);
+
+        if (wasConnected) {
+            internals.disconnectTree(this);
+        }
+    };
 };
