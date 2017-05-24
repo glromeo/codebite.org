@@ -16,8 +16,6 @@ export default function patchElement(registry) {
         }
     }));
 
-    const definitions = registry.definitions;
-
     function upgradeTree(root) {
 
         const walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT);
@@ -31,7 +29,7 @@ export default function patchElement(registry) {
             if (node.hasAttributes()) {
 
                 for (let attr of node.attributes) {
-                    const definition = definitions.get(attr.name);
+                    const definition = registry.get(attr.name);
                     if (definition) {
                         customAttribute = new definition(attr);
                         customAttribute.sourceAttribute = attr;

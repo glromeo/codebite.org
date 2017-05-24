@@ -75,6 +75,27 @@ app.use('/mocha', transpileAnyMiddleware({
 }));
 app.use('/mocha', express.static(path.join(__dirname, 'target/mocha')));
 
+app.use('/benchmark', transpileAnyMiddleware({
+    src: 'src/perf',
+    dest: 'target/perf',
+    from: '*.js',
+    to: '*.js',
+    debug: true,
+    force: false,
+    transpiler: (function (options) {
+        options.plugins.push("transform-es2015-modules-systemjs");
+        return function (source, {req, file}) {
+            console.log("user-agent:", req.headers['user-agent']);
+            console.log("compiling:", file || req.path);
+            return babel.transform(source, options);
+        }
+    })(JSON.parse(fs.readFileSync(".babelrc"))),
+    headers: {
+        "Content-Type": "application/javascript"
+    }
+}));
+app.use('/benchmark', express.static(path.join(__dirname, 'target/perf')));
+
 /**
  * Static content & serve indices
  */

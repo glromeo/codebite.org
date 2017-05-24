@@ -4,6 +4,7 @@ SystemJS.config({
         "calvin": "/babel/calvin",
         "decorators": "/babel/decorators",
         "custom-attributes": "/babel/custom-attributes",
+        "benchmark": "/benchmark",
         "mocha": "/mocha"
     },
     packages: {
@@ -17,6 +18,10 @@ SystemJS.config({
             defaultExtension: 'js'
         },
         'custom-attributes': {
+            format: 'system',
+            defaultExtension: 'js'
+        },
+        'benchmark': {
             format: 'system',
             defaultExtension: 'js'
         },

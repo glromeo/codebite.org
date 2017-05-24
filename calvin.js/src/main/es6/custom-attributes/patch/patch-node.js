@@ -17,4 +17,13 @@ export default function patchNode(registry) {
     function copyCustomAttributes(clone) {
 
     }
+
+    patchPrototypeMethod(Node, 'insertBefore', nativeInsertBefore => function (node, refNode) {
+        const nativeResult = nativeInsertBefore.call(this, node, refNode);
+        if (this.isConnected) {
+            log.call(this, "insertBefore", node, refNode);
+            // registry.connectTree(node);
+        }
+        return nativeResult;
+    });
 }

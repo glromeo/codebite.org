@@ -9,6 +9,7 @@ describe('Custom Attribute Registry', function () {
     let registry = window.customAttributes;
 
     before(function () {
+        registry.define("a-ca", class {});
     });
 
     function appendNewTestRootElement() {
@@ -29,7 +30,7 @@ describe('Custom Attribute Registry', function () {
 
         console.log("set");
 
-        testRootElement.innerHTML = '<div><div for-each="item in items" if-true="item.accepted"></div></div>';
+        testRootElement.innerHTML = '<div><div for-each="item in items" if-true="item.accepted" a-ca="xyz"></div></div>';
 
         let outer = testRootElement.querySelector('div');
         let inner = outer.querySelector('div');

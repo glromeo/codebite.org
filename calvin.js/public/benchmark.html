@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <link rel="shortcut icon" href="images/cobra.png">
+    <link href="lib/mocha/mocha.css" rel="stylesheet"/>
+    <script src="globals.js"></script>
+    <script src="lib/jquery/dist/jquery.min.js"></script>
+    <script src="lib/webcomponentsjs/webcomponents-lite.js"></script>
+</head>
+<body>
+<div id="mocha"></div>
+<script src="/node_modules/bluebird/js/browser/bluebird.min.js"></script>
+<script src="/node_modules/systemjs/dist/system.js"></script>
+<script src="config.js"></script>
+<script src="lib/lodash/lodash.js"></script>
+<script src="lib/platform.js/platform.js"></script>
+<script src="lib/benchmark/benchmark.js"></script>
+
+<script type="text/javascript">
+    SystemJS.import('calvin').then(function (elements) {
+
+        elements.bootstrap(document.querySelector('HTML'));
+
+        const parameters = {};
+        location.search.substring(1).split('&').forEach(function (pair) {
+            let p = pair.split('=');
+            parameters[p[0]] = p[1];
+        });
+
+        Promise.all([
+            SystemJS.import('benchmark/' + parameters.suite + '.benchmark.js')
+        ]).then(function (modules) {
+            modules.forEach(module => module.benchmark())
+        });
+
+    }, console.error.bind(console));
+</script>
+</body>
+</html>
