@@ -25,18 +25,6 @@ export function closest(name, fromNode, callback) {
     } while (fromNode);
 }
 
-export function visitTree(root, callback) {
-    if (!root) {
-        return;
-    }
-    for (let child = root.firstChild; child; child = child.nextSibling) {
-        let recurse = callback(child) !== false;
-        if (recurse) {
-            visitTree(child, callback);
-        }
-    }
-}
-
 export function appendCallback(target, methodName, callback) {
     let delegate = target[methodName];
     if (delegate) {

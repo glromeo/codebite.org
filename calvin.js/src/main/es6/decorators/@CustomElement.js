@@ -1,6 +1,6 @@
 import {dashCase} from "calvin/utility";
 
-export default function (what, options) {
+export function CustomElement(what, options) {
     if (typeof what === "string") {
         return function (target) {
             window.customElements.define(what, target, options);
@@ -11,4 +11,3 @@ export default function (what, options) {
         throw new Error("invalid decorator invocation");
     }
 }
-

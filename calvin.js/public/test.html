@@ -10,6 +10,7 @@
 </head>
 <body>
 <div id="mocha"></div>
+<div id="testRoot"></div>
 <script src="/node_modules/bluebird/js/browser/bluebird.min.js"></script>
 <script src="/node_modules/systemjs/dist/system.js"></script>
 <script src="config.js"></script>
@@ -21,15 +22,20 @@
 <script type="text/javascript">
     SystemJS.import('calvin').then(function (elements) {
 
-        elements.bootstrap(document.querySelector('HTML'));
+        window['testRoot'] = elements.bootstrap(document.querySelector('#testRoot'));
+
+        const parameters = {};
+        location.search.substring(1).split('&').forEach(function (pair) {
+            let p = pair.split('=');
+            parameters[p[0]] = p[1];
+        });
 
         mocha.checkLeaks();
 
         mocha.globals(['jQuery']);
 
         Promise.all([
-            SystemJS.import('mocha/custom-attribute-registry.tests.js'),
-            SystemJS.import('mocha/dom-patching.tests.js')
+            SystemJS.import('mocha/nested-custom-elements.test.js')
         ]).then(function () {
             mocha.run();
         });

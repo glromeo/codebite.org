@@ -1,10 +1,10 @@
-import {appendCallback, closest, visitTree} from "calvin/utility";
-import CustomElement from "decorators/@CustomElement";
-import {createScope} from "./main";
+import {appendCallback, closest, visitTree} from "./utility";
+import {createScope} from "./scope";
+import {CustomElement} from "../decorators/@CustomElement";
 
 const debug = true;
 
-class PaperElement extends HTMLElement {
+export class PaperElement extends HTMLElement {
 
     constructor() {
         super();
@@ -25,14 +25,14 @@ class PaperElement extends HTMLElement {
                 }
             }
 
-            visitTree(this, node => {
-                if (node.render) {
-                    barrier++;
-                    if (debug) console.debug("waiting for node:", node);
-                    appendCallback(node, "readyCallback", descendantReadyCallback);
-                    return false;
-                }
-            });
+            const treeWalker = document.createTreeWalker(this, NodeFilter.SHOW_ELEMENT);
+            let element;
+            while (element = treeWalker.nextNode()) if (element.render) {
+                barrier++;
+                if (debug) console.debug("waiting for node:", element);
+                appendCallback(element, "readyCallback", descendantReadyCallback);
+                return false;
+            }
         }
 
         if (this.linkCallback) {
@@ -62,7 +62,7 @@ class PaperElement extends HTMLElement {
 }
 
 @CustomElement
-class PaperReport extends PaperElement {
+export class PaperReport extends PaperElement {
     constructor() {
         super();
     }
@@ -88,28 +88,28 @@ class PaperReport extends PaperElement {
 }
 
 @CustomElement
-class ReportPage extends PaperElement {
+export class ReportPage extends PaperElement {
     constructor() {
         super();
     }
 }
 
 @CustomElement
-class PageHeader extends PaperElement {
+export class PageHeader extends PaperElement {
     constructor() {
         super();
     }
 }
 
 @CustomElement
-class PageBody extends PaperElement {
+export class PageBody extends PaperElement {
     constructor() {
         super();
     }
 }
 
 @CustomElement
-class PageFooter extends PaperElement {
+export class PageFooter extends PaperElement {
     constructor() {
         super();
     }
@@ -117,7 +117,7 @@ class PageFooter extends PaperElement {
 
 
 @CustomElement
-class ForEach extends PaperElement {
+export class ForEach extends PaperElement {
 
     constructor() {
         super();
