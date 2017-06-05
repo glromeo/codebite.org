@@ -1,0 +1,29 @@
+{
+  "manifest_version": 2,
+  "name": "paper-plane-devtools",
+  "description": "Chrome developer tools extension to debug the paper plane.",
+  "version": "1.1",
+  "minimum_chrome_version": "50.0",
+  "devtools_page": "devtools.html",
+  "background": {
+    "scripts": [
+      "background.js"
+    ]
+  },
+  "permissions": [
+    "<all_urls>",
+    "webNavigation"
+  ],
+  "content_security_policy": "script-src 'self' 'unsafe-eval'; object-src 'self'",
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "content-script.js"
+      ],
+      "run_at": "document_start"
+    }
+  ]
+}
