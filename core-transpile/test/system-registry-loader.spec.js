@@ -1,10 +1,10 @@
+import * as assert from "assert";
 import * as babel from "babel-core";
 import * as fs from "fs";
 import * as path from "path";
 
 import SystemRegisterLoader from "system-register-loader/src/system-register-loader";
 import TranspilerTemplate from "../lib/TranspilerTemplate";
-import * as assert from "assert";
 
 describe("system-register-loader", function () {
 
