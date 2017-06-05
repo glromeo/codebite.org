@@ -59,7 +59,6 @@ class ObservableHandler {
         } else {
             let value = target[property];
             if (value && typeof value === "object" && property[0] !== '$') {
-                // Object.create(value)
                 return this[property] = new Proxy(value, new ObservableHandler(this, property));
             } else {
                 return value;

@@ -28,5 +28,7 @@ export function bootstrap(rootElement) {
 
     cleanUpObserver.observe(document.querySelector('body'), {childList: true, subtree: true});
 
+    document.dispatchEvent(new CustomEvent("paper-plane:ready"));
+
     if (debug) console.log("bootstrap completed");
 }
