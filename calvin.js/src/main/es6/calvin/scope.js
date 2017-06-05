@@ -14,7 +14,17 @@ export function createScope(element, assign, isolated) {
         $id: scopeIdSequence++,
         $self: scope,
         $parent: parent,
-        $element: element
+        $element: element,
+        $new(assign, isolated) {
+            const parent = this.$self;
+            const child = isolated ? {} : Object.create(parent);
+            Object.assign(child, assign, {
+                $id: scopeIdSequence++,
+                $self: scope,
+                $parent: parent,
+            });
+            return new Proxy(child, new ObservableRootHandler(path(child) + "[$scope:" + child.$id + "]"));
+        }
     });
 
     function path(scope) {

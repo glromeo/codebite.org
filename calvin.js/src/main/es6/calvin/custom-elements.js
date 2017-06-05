@@ -1,6 +1,6 @@
-import {appendCallback, closest, visitTree} from "./utility";
-import {createScope} from "./scope";
 import {CustomElement} from "../decorators/@CustomElement";
+import {createScope} from "./scope";
+import {appendCallback, closest, visitTree} from "./utility";
 
 const debug = true;
 
@@ -14,6 +14,17 @@ export class PaperElement extends HTMLElement {
     connectedCallback() {
         if (debug) console.debug("connected:", this.tagName);
 
+        let $scope;
+
+        const linker = this.compile();
+        this.linked;
+        if (linker) {
+            this.linked = linker.call(this, $scope = closest("$scope", this));
+        } else {
+            this.linked = Promise.resolve();
+        }
+
+
         if (this.childrenReadyCallback) {
             let barrier = 0;
             let parent = this;
@@ -26,29 +37,70 @@ export class PaperElement extends HTMLElement {
             }
 
             const treeWalker = document.createTreeWalker(this, NodeFilter.SHOW_ELEMENT);
-            let element;
-            while (element = treeWalker.nextNode()) if (element.render) {
+            let element = treeWalker.nextNode();
+            while (element) if (element.render) {
                 barrier++;
                 if (debug) console.debug("waiting for node:", element);
                 appendCallback(element, "readyCallback", descendantReadyCallback);
-                return false;
+                element = treeWalker.nextSibling();
+            } else {
+                element = treeWalker.nextNode();
             }
         }
 
-        if (this.linkCallback) {
-            this.linkCallback();
-        }
-
-        if (this.render) {
-            let $scope = closest("$scope", this);
-            let promise = this.render($scope);
-            if (promise) {
-                promise.then(() => this.readyCallback());
+        return this.linked.then(() => {
+            if (this.render) {
+                $scope = $scope || closest("$scope", this);
+                let promise = this.render($scope);
+                if (promise) {
+                    return promise.then(() => this.readyCallback());
+                } else if (this.readyCallback) {
+                    this.readyCallback();
+                }
             } else if (this.readyCallback) {
                 this.readyCallback();
             }
-        } else if (this.readyCallback) {
-            this.readyCallback();
+        });
+    }
+
+    compile() {
+
+        const treeWalker = document.createTreeWalker(this, NodeFilter.SHOW_TEXT);
+
+        const linkFunctions = [];
+
+        for (const attr of this.attributes) if (attr.name[0] === '@') {
+            const expression = attr.value;
+            const attrName = attr.name.substring(1);
+            const update = (value) => {
+                this.setAttribute(attrName, value);
+            }
+            linkFunctions.push(function ($scope) {
+                return $scope.$watch(expression, update).then(update);
+            })
+        }
+
+        let node, text, begin, end;
+        while (node = treeWalker.nextNode()) if (
+            (text = node.nodeValue)
+            && (begin = text.indexOf('{{') + 2) >= 2
+            && (end = text.indexOf('}}', begin + 2)) >= 0
+        ) {
+            const expression = text.substring(begin, end);
+            const textNode = node;
+            const update = function (value) {
+                textNode.nodeValue = value ? value : "???";
+            };
+            linkFunctions.push(function ($scope) {
+                return $scope.$watch(expression, update).then(update);
+            });
+        }
+
+
+        if (linkFunctions.length) {
+            return function ($scope) {
+                return Promise.all(linkFunctions.map(fn => fn($scope)));
+            };
         }
     }
 
@@ -61,8 +113,11 @@ export class PaperElement extends HTMLElement {
     }
 }
 
+Object.defineProperty(PaperElement.prototype, Symbol.toStringTag, {value: PaperElement.name});
+
 @CustomElement
 export class PaperReport extends PaperElement {
+
     constructor() {
         super();
     }
@@ -71,7 +126,7 @@ export class PaperReport extends PaperElement {
 
         super.connectedCallback();
 
-        createScope(this, {
+        const $scope = {
             report: {
                 chapters: [
                     [{pag: 1}, {pag: 2}, {pag: 3}],
@@ -79,7 +134,14 @@ export class PaperReport extends PaperElement {
                     [{pag: 7}, {pag: 8}, {pag: 9}]
                 ]
             }
-        });
+        };
+
+        for (let script of this.querySelectorAll('script')) {
+            console.log("script:", script);
+            new Function("window", "$", script.innerText).call($scope, window, $);
+        }
+
+        createScope(this, $scope);
     }
 
     childrenReadyCallback() {
@@ -91,6 +153,19 @@ export class PaperReport extends PaperElement {
 export class ReportPage extends PaperElement {
     constructor() {
         super();
+    }
+
+    connectedCallback() {
+        if (this.hasOwnProperty('$scope')) {
+            Object.assign(this.$scope, {page: {}});
+        } else {
+            createScope(this, {page: {}});
+        }
+        super.connectedCallback().then(() => {
+            for (const attr of this.attributes) if (attr.name[0] !== '@') {
+                this.$scope.page[attr.name] = attr.value;
+            }
+        });
     }
 }
 
@@ -162,7 +237,6 @@ export class ForEach extends PaperElement {
         };
 
         let update = (items) => {
-
             let parentNode = marker.parentNode;
 
             while (placeholder.nextSibling !== marker) {
@@ -192,10 +266,13 @@ export class ForEach extends PaperElement {
 
     renderItem($scope, [item, index]) {
         let clone = this.template.cloneNode(true);
-        createScope(clone, {
+        const $itemScope = $scope.$new({
             [this.item]: item,
             "$index": index
         });
+        for (const child of clone.children) {
+            child.$scope = $itemScope;
+        }
         return clone;
     }
 }

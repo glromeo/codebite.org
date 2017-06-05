@@ -102,8 +102,6 @@ export class ObservableRootHandler extends ObservableHandler {
 
     $watch(expression, callback) {
 
-        console.log("watching:", this.path(), this);
-
         let $scope = this.$self;
 
         function notify(path) {
