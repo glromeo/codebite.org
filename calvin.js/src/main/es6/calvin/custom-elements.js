@@ -2,7 +2,7 @@ import {CustomElement} from "../decorators/@CustomElement";
 import {createScope} from "./scope";
 import {appendCallback, closest, visitTree} from "./utility";
 
-const debug = true;
+const debug = false;
 
 export class PaperElement extends HTMLElement {
 

@@ -1,4 +1,4 @@
 
-export default function (target) {
+export default function Transclude(target) {
     target['@Transclude'] = true;
 }

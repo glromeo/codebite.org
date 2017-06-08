@@ -32,39 +32,41 @@
                 <div>pg. {{page.number}}</div>
             </page-footer>
         </report-page>
-        <!--<for-each item="cuisine" in="cuisines">-->
-            <!--<report-page @title="cuisine.name">-->
-                <!--<page-header style="background-color: red">-->
-                    <!--<div>{{$index}}</div>-->
-                    <!--<div>{{page.title}}</div>-->
-                    <!--<div></div>-->
-                <!--</page-header>-->
-                <!--<page-body style="background-color: white">-->
-                    <!--<div>{{cuisine.name}} Restaurants</div>-->
-                    <!--<table>-->
-                        <!--<thead>-->
-                        <!--<tr>-->
-                            <!--<th>Name</th>-->
-                            <!--<th>Cuisine</th>-->
-                            <!--<th>Borough</th>-->
-                        <!--</tr>-->
-                        <!--</thead>-->
-                        <!--<tbody>-->
-                        <!--<tr for-each="restaurant in ">-->
-                            <!--<td>{{cuisine.name}}</td>-->
-                            <!--<td>{{cuisine.name}}</td>-->
-                            <!--<td>{{cuisine.name}}</td>-->
-                        <!--</tr>-->
-                        <!--</tbody>-->
-                    <!--</table>-->
-                <!--</page-body>-->
-                <!--<page-footer style="background-color: blue">-->
-                    <!--<div></div>-->
-                    <!--<div>Bottom</div>-->
-                    <!--<div>pg. {{page.number}}</div>-->
-                <!--</page-footer>-->
-            <!--</report-page>-->
-        <!--</for-each>-->
+        <for-each item="cuisine" in="cuisines">
+            <report-page @title="cuisine.name">
+                <page-header style="background-color: red">
+                    <div>{{$index}}</div>
+                    <div>{{page.title}}</div>
+                    <div></div>
+                </page-header>
+                <page-body style="background-color: white">
+                    <div>{{cuisine.name}} Restaurants</div>
+                    <table>
+                        <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Cuisine</th>
+                            <th>Borough</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <template @for-each="restaurant in restaurants">
+                            <tr >
+                                <td>{{cuisine.name}}</td>
+                                <td>{{cuisine.name}}</td>
+                                <td>{{cuisine.name}}</td>
+                            </tr>
+                        </template>
+                        </tbody>
+                    </table>
+                </page-body>
+                <page-footer style="background-color: blue">
+                    <div></div>
+                    <div>Bottom</div>
+                    <div>pg. {{page.number}}</div>
+                </page-footer>
+            </report-page>
+        </for-each>
     </paper-report>
 </template>
 <script src="/node_modules/bluebird/js/browser/bluebird.min.js"></script>

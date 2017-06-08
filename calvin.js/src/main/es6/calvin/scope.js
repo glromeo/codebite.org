@@ -3,6 +3,11 @@ import {closest} from "./utility";
 
 let scopeIdSequence = 0;
 
+window.$scope = function(selector) {
+    "use strict";
+    return document.querySelector(selector).$scope;
+}
+
 export function createScope(element, assign, isolated) {
     if (element.$scope) {
         throw new Error("element has already a $scope associated with it");
