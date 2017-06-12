@@ -70,8 +70,6 @@ export default class CustomAttributeRegistry {
                             node.appendChild(pi);
                         }
 
-                    } else if () {
-
                     }
                 }
             }

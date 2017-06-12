@@ -5,9 +5,13 @@ export default function patchElement(registry) {
     patchPrototypeProperty(Element, 'innerHTML', (nativeGetter, nativeSetter) => ({
         set: function (html) {
             if (this.isConnected) {
-                registry.disconnectTree(this);
+                for (let node = this.firstChild; node; node = node.nextSibling) {
+                    registry.disconnectTree(node);
+                }
                 nativeSetter.call(this, html);
-                registry.connectTree(this);
+                for (let node = this.firstChild; node; node = node.nextSibling) {
+                    registry.connectTree(node);
+                }
             } else {
                 nativeSetter.call(this, html);
             }

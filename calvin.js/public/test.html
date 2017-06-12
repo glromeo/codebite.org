@@ -35,7 +35,7 @@
         mocha.globals(['jQuery']);
 
         Promise.all([
-            SystemJS.import('mocha/nested-custom-elements.test.js')
+            SystemJS.import('mocha/' + parameters.suite + '.test.js')
         ]).then(function () {
             mocha.run();
         });

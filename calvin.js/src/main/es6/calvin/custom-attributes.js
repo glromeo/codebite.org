@@ -48,7 +48,7 @@ class PaperAttribute {
 class ForEach extends PaperAttribute {
 
     constructor(attr) {
-        super();
+        super(attr);
 
         let match = attr.value.match(/^\s*(.+)\s+in\s+(.*?)\s*$/);
         this.item = match[1];
@@ -115,7 +115,7 @@ class ForEach extends PaperAttribute {
         const clone = this.sourceNode.cloneNode(true);
         createScope(clone, {
             [this.item]: item,
-            "$index": index
+            "index": index
         });
         return clone;
     }
@@ -125,8 +125,8 @@ class ForEach extends PaperAttribute {
 @Transclude
 class IfTrue extends PaperAttribute {
 
-    constructor() {
-        super();
+    constructor(attr) {
+        super(attr);
     }
 
     connectedCallback() {

@@ -2,7 +2,7 @@ import {CustomElement} from "../decorators/@CustomElement";
 import {createScope} from "./scope";
 import {appendCallback, closest, visitTree} from "./utility";
 
-const debug = false;
+const debug = true;
 
 export class PaperElement extends HTMLElement {
 
@@ -197,9 +197,11 @@ export class ForEach extends PaperElement {
     constructor() {
         super();
 
-        this.template = document.createDocumentFragment();
+        console.log("stripping the elements...");
+
+        this.content = document.createDocumentFragment();
         for (let child = this.firstChild; child; child = this.firstChild) {
-            this.template.appendChild(child);
+            this.content.appendChild(child);
         }
 
         this.item = this.getAttribute("item");
@@ -207,17 +209,12 @@ export class ForEach extends PaperElement {
 
     render($scope) {
 
-        let placeholder = createPlaceholder.call(this, ' begin of: ');
-        let marker = createPlaceholder.call(this, ' end of: ');
-
         let fragment = document.createDocumentFragment();
 
         let expression = this.getAttribute("in");
 
         let create = (items) => {
 
-            fragment.appendChild(placeholder);
-
             if (Array.isArray(items)) {
                 items.forEach((item, index) => {
                     fragment.appendChild(this.renderItem($scope, [item, index]));
@@ -227,21 +224,13 @@ export class ForEach extends PaperElement {
                     fragment.appendChild(this.renderItem($scope, [items[key], key]));
                 });
             }
-            fragment.appendChild(marker);
 
-            this.parentNode.replaceChild(fragment, this);
-
-            placeholder.cleanUpCallback = () => {
-                console.log("clean up:", this);
-            }
+            this.appendChild(fragment);
         };
 
         let update = (items) => {
-            let parentNode = marker.parentNode;
 
-            while (placeholder.nextSibling !== marker) {
-                parentNode.removeChild(placeholder.nextSibling);
-            }
+            while (this.lastChild) this.removeChild(this.lastChild);
 
             if (Array.isArray(items)) {
                 items.forEach((item, index) => {
@@ -253,7 +242,7 @@ export class ForEach extends PaperElement {
                 });
             }
 
-            parentNode.insertBefore(fragment, marker);
+            this.appendChild(fragment);
         };
 
         return $scope.$watch(expression, function (items, {path, to, from}) {
@@ -265,10 +254,10 @@ export class ForEach extends PaperElement {
     }
 
     renderItem($scope, [item, index]) {
-        let clone = this.template.cloneNode(true);
+        let clone = this.content.cloneNode(true);
         const $itemScope = $scope.$new({
             [this.item]: item,
-            "$index": index
+            "index": index
         });
         for (const child of clone.children) {
             child.$scope = $itemScope;

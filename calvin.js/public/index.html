@@ -50,13 +50,11 @@
                         </tr>
                         </thead>
                         <tbody>
-                        <template @for-each="restaurant in restaurants">
-                            <tr >
-                                <td>{{cuisine.name}}</td>
-                                <td>{{cuisine.name}}</td>
-                                <td>{{cuisine.name}}</td>
-                            </tr>
-                        </template>
+                        <tr @for="restaurant in restaurants" @if="restaurant">
+                            <td>{{cuisine.name}}</td>
+                            <td>{{cuisine.name}}</td>
+                            <td>{{cuisine.name}}</td>
+                        </tr>
                         </tbody>
                     </table>
                 </page-body>
