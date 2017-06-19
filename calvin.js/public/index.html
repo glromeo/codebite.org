@@ -50,11 +50,13 @@
                         </tr>
                         </thead>
                         <tbody>
-                        <tr @for="restaurant in restaurants" @if="restaurant">
-                            <td>{{cuisine.name}}</td>
-                            <td>{{cuisine.name}}</td>
-                            <td>{{cuisine.name}}</td>
-                        </tr>
+                        <template is="for-each" item="restaurant" in="[{name:'1'},{name:'2'},{name:'3'}]">
+                            <tr>
+                                <td>{{restaurant.name}}</td>
+                                <td>{{cuisine.name}}</td>
+                                <td>{{cuisine.name}}</td>
+                            </tr>
+                        </template>
                         </tbody>
                     </table>
                 </page-body>

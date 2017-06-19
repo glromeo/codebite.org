@@ -1,4 +1,4 @@
-import "calvin/custom-attributes";
+// import "calvin/custom-attributes";
 import "calvin/custom-elements";
 
 import {createScope} from "./scope";
