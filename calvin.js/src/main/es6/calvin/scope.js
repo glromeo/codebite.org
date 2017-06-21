@@ -12,7 +12,7 @@ export function createScope(element, assign, isolated) {
     if (element.$scope) {
         throw new Error("element has already a $scope associated with it");
     }
-    let parent = closest("$scope", element, closest => closest.$scope.$self);
+    let parent = element.findProperty("$scope", closest => closest.$scope.$self);
 
     let scope = isolated || !parent ? {} : Object.create(parent);
     Object.assign(scope, assign, {

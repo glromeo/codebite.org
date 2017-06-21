@@ -1,7 +1,5 @@
 import {Linker} from "calvin/linker";
 
-const ALL_WHITESPACES = /^\s+$/g;
-
 export function Transclude(options) {
 
     if (options instanceof Function) {

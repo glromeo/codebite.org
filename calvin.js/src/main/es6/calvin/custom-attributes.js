@@ -21,7 +21,7 @@ class PaperAttribute {
         if (debug) console.debug("linked:", this.constructor.name, this.targetNode.tagName);
 
         if (this.value) {
-            let $scope = closest("$scope", this);
+            let $scope = this.findProperty("$scope");
             let promise = this.render($scope);
             if (promise) {
                 promise.then(() => this.readyCallback());

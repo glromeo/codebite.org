@@ -1,7 +1,8 @@
 'use strict';
 
-var DASH_REGEX = /[A-Z\u00C0-\u00D6\u00D8-\u00DE]/g;
-var REVERSE_REGEX = /-[a-z\u00E0-\u00F6\u00F8-\u00FE]/g;
+const DASH_REGEX = /[A-Z\u00C0-\u00D6\u00D8-\u00DE]/g;
+const REVERSE_REGEX = /-[a-z\u00E0-\u00F6\u00F8-\u00FE]/g;
+const ALL_WHITESPACES = /^\s+$/g;
 
 export function dashCase(str) {
     return str.replace(DASH_REGEX, function (match) {
@@ -23,6 +24,15 @@ export function closest(name, fromNode, callback) {
         fromNode = fromNode.parentElement;
 
     } while (fromNode);
+}
+
+Node.prototype.findProperty = function (name, callback) {
+    let node = this;
+    do {
+        if (node[name]) {
+            return callback ? callback(node) : node[name];
+        }
+    } while (node = node.parentNode);
 }
 
 export function appendCallback(target, methodName, callback) {

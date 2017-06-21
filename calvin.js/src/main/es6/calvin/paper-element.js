@@ -1,7 +1,7 @@
 import {appendCallback, closest} from "./utility";
 import {Linker} from "./linker";
 
-const debug = false;
+const debug = true;
 
 export class PaperElement extends HTMLElement {
 
@@ -20,7 +20,9 @@ export class PaperElement extends HTMLElement {
     connectedCallback() {
         debug && console.debug("connected:", this.tagName);
 
-        return new Linker(closest("$scope", this)).link(this).then($scope => {
+        return new Linker(this.findProperty("$scope")).link(this).then($scope => {
+
+            debug && console.debug("linked:", this.tagName);
 
             if (this.childrenReadyCallback) {
                 let barrier = 0;
@@ -56,7 +58,7 @@ export class PaperElement extends HTMLElement {
     }
 
     readyCallback() {
-
+        debug && console.debug("ready:", this.tagName);
     }
 
     disconnectedCallback() {
