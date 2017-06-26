@@ -1,7 +1,6 @@
 import CustomAttribute from "decorators/@CustomAttribute";
 import Transclude from "decorators/@Transclude";
-import {closest} from "./utility";
-import {createScope} from "./scope";
+import {Scope} from "../decorators/@Scope";
 
 const debug = true;
 
@@ -113,7 +112,7 @@ class ForEach extends PaperAttribute {
 
     renderItem($scope, [item, index]) {
         const clone = this.sourceNode.cloneNode(true);
-        createScope(clone, {
+        new Scope(clone, {
             [this.item]: item,
             "index": index
         });

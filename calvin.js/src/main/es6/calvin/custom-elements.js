@@ -1,38 +1,34 @@
+import {before} from "../decorators/@before";
+import {after} from "../decorators/@after";
 import {CustomElement} from "../decorators/@CustomElement";
-import {Linker} from "./linker";
-import {PaperElement} from "./paper-element";
-import {createScope} from "./scope";
+import {Scope} from "../decorators/@Scope";
 import {Transclude} from "../decorators/@Transclude";
+import {PaperElement} from "./paper-element";
 
 const debug = true;
 
 @CustomElement
+@Scope({
+    report: {
+        chapters: [
+            [{pag: 1}, {pag: 2}, {pag: 3}],
+            [{pag: 4}, {pag: 5}, {pag: 6}],
+            [{pag: 7}, {pag: 8}, {pag: 9}]
+        ]
+    }
+})
 export class PaperReport extends PaperElement {
 
     constructor() {
         super();
     }
 
-    connectedCallback() {
-
-        super.connectedCallback();
-
-        const $scope = {
-            report: {
-                chapters: [
-                    [{pag: 1}, {pag: 2}, {pag: 3}],
-                    [{pag: 4}, {pag: 5}, {pag: 6}],
-                    [{pag: 7}, {pag: 8}, {pag: 9}]
-                ]
-            }
-        };
-
+    @before("link")
+    executeScripts($scope) {
         for (let script of this.querySelectorAll('script')) {
             console.log("script:", script);
             new Function("window", "$", script.innerText).call($scope, window, $);
         }
-
-        createScope(this, $scope);
     }
 
     readyCallback() {
@@ -41,20 +37,17 @@ export class PaperReport extends PaperElement {
 }
 
 @CustomElement
+@Scope({page: {}})
 export class ReportPage extends PaperElement {
     constructor() {
         super();
     }
 
-    connectedCallback() {
-        if (this.hasOwnProperty('$scope')) {
-            Object.assign(this.$scope, {page: {}});
-        } else {
-            createScope(this, {page: {}});
-        }
-        super.connectedCallback().then(() => {
+    @after("link")
+    assignAttributes($scope) {
+        this.ready.then(() => {
             for (const attr of this.attributes) if (attr.name[0] !== '@') {
-                this.$scope.page[attr.name] = attr.value;
+                $scope.page[attr.name] = attr.value;
             }
         });
     }
@@ -84,13 +77,6 @@ export class PageFooter extends PaperElement {
 @CustomElement
 @Transclude
 export class ForEach extends PaperElement {
-
-    constructor() {
-        super();
-
-        console.log("stripping the elements...");
-
-    }
 
     render($scope) {
 

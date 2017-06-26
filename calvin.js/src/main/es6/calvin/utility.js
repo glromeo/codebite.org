@@ -69,3 +69,7 @@ class LoggingProxyHandler {
         return true;
     }
 }
+
+export const EMPTY_ARRAY = [];
+export const EMPTY_OBJECT = {};
+export const VOID_FUNCTION = function () {};

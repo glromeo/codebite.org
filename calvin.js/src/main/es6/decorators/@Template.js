@@ -1,5 +1,5 @@
 
-export default function Template(what) {
+export function Template(what) {
     return function (target) {
         target['@Template'] = what;
     }

@@ -1,48 +1,65 @@
-import {ObservableRootHandler} from "./observe-notify";
-import {closest} from "./utility";
-
+import {ObservableHandler, Watcher} from "./observe-notify";
 let scopeIdSequence = 0;
 
 window.$scope = function(selector) {
     "use strict";
-    return document.querySelector(selector).$scope;
+    return document.querySelector(selector).findProperty("$scope");
 }
 
-export function createScope(element, assign, isolated) {
-    if (element.$scope) {
-        throw new Error("element has already a $scope associated with it");
-    }
-    let parent = element.findProperty("$scope", closest => closest.$scope.$self);
+export const WATCHED_EXPRESSIONS = '[[WatchedExpressions]]';
 
-    let scope = isolated || !parent ? {} : Object.create(parent);
-    Object.assign(scope, assign, {
-        $id: scopeIdSequence++,
-        $self: scope,
-        $parent: parent,
-        $element: element,
-        $new(assign, isolated) {
-            const parent = this.$self;
-            const child = isolated ? {} : Object.create(parent);
-            Object.assign(child, assign, {
-                $id: scopeIdSequence++,
-                $self: scope,
-                $parent: parent,
-            });
-            return new Proxy(child, new ObservableRootHandler(path(child) + "[$scope:" + child.$id + "]"));
-        }
-    });
+class Handler extends ObservableHandler {
 
-    function path(scope) {
-        if (scope.$parent) {
-            return path(scope.$parent) + ">" + scope.$element.tagName;
-        } else {
-            return scope.$element.tagName;
+    constructor(label) {
+        super();
+        this.path = () => {
+            return label;
         }
     }
 
-    element.$scope = new Proxy(scope, new ObservableRootHandler(path(scope) + "[$scope:" + scope.$id + "]"));
+    $eval(expression) {
+        return jexl.eval(expression, this);
+    }
 
-    return function destroyScope() {
-        throw "Not implemented yet!";
+    $watch(expression, callback) {
+        const watcher = this.getWatcher(expression);
+        watcher.addIfNotPresent(callback);
+        return watcher.promise;
+    }
+
+    getWatcher(expression) {
+        const watchers = this.watchers;
+        let watcher = watchers.get(expression);
+        if (watcher === undefined) {
+            watchers.set(expression, watcher = new Watcher(this, expression));
+        }
+        return watcher;
+    }
+
+    get watchers() {
+        return this[WATCHED_EXPRESSIONS] || (this[WATCHED_EXPRESSIONS] = new Map());
+    }
+}
+
+let lastScopeId = 0;
+
+export class Scope {
+
+    constructor(initial, parent, isolated) {
+
+        let scope = !parent ? initial : Object.assign(isolated ? {} : Object.create(parent), initial);
+        let handler = new Handler("[$scope:" + scope.$id + "]");
+
+        Object.assign(handler, {
+            $id: lastScopeId++,
+            $target: scope,
+            $handler: handler,
+            $parent: parent,
+            $new(initial, isolated) {
+                return new Scope(initial, this.$target, isolated);
+            }
+        });
+
+        return new Proxy(scope, handler);
     }
 }

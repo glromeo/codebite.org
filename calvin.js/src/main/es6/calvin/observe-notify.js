@@ -34,7 +34,7 @@ function getPropertyHandler(property) {
 
 const WATCHERS = "[[Watchers]]";
 
-class ObservableHandler {
+export class ObservableHandler {
 
     constructor(parent, property) {
         const handler = this;
@@ -98,7 +98,7 @@ export const WATCHED_EXPRESSIONS = '[[WatchedExpressions]]';
 
 let uniqueId = 0;
 
-class Watcher {
+export class Watcher {
 
     constructor(scope, expression) {
         this.scope = scope;
@@ -151,7 +151,7 @@ class Watcher {
     }
 
     notify(path) {
-        jexl.eval(this.expression, this.scope.$self).then(result => {
+        jexl.eval(this.expression, this.scope.$target).then(result => {
             const callbacks = this.callbacks;
             let i = callbacks.length;
             while (--i >= 0) {
@@ -165,44 +165,5 @@ class Watcher {
 
     addIfNotPresent(callback) {
         if (!this.callbacks.includes(callback)) this.callbacks.push(callback);
-    }
-}
-
-export class ObservableRootHandler extends ObservableHandler {
-
-    constructor(label) {
-        super();
-        this[WATCHED_EXPRESSIONS] = null;
-        this.path = () => {
-            return label;
-        }
-    }
-
-    $eval(expression) {
-        return jexl.eval(expression, this);
-    }
-
-    $watch(expression, callback) {
-        const watcher = this.getWatcher(expression);
-        watcher.addIfNotPresent(callback);
-        return watcher.promise;
-    }
-
-    getWatcher(expression) {
-        const watchersMap = this.getWatchersMap();
-        let watcher = watchersMap.get(expression);
-        if (watcher === undefined) {
-            watchersMap.set(expression, watcher = new Watcher(this, expression));
-        }
-        return watcher;
-    }
-
-    getWatchersMap() {
-        const map = this[WATCHED_EXPRESSIONS];
-        if (map === null) {
-            return this[WATCHED_EXPRESSIONS] = new Map();
-        } else {
-            return map;
-        }
     }
 }

@@ -1,48 +1,55 @@
-import {Linker} from "calvin/linker";
+import {compile} from "../calvin/compiler";
 
 export function Transclude(options) {
 
     if (options instanceof Function) {
-        const target = options;
 
-        target['@Transclude'] = function () {
-            let child;
-            if (this.firstChild) {
-                this.content = document.createDocumentFragment();
-                while (child = this.firstChild) {
-                    this.content.appendChild(child);
-                }
-            }
-        };
+        const prototype = options.prototype;
 
-        target.prototype.transclude = function ($scope) {
+        prototype.compile = (compile => function transclude() {
 
-            const linker = new Linker($scope);
+            this.content = document.createDocumentFragment();
+
+            while (this.firstChild) this.content.appendChild(this.firstChild);
+
+            compile.apply(this);
+
+        })(prototype.compile);
+
+        prototype.transclude = function ($scope) {
 
             let clone = this.content.cloneNode(true);
             for (let child = clone.firstChild; child; child = child.nextSibling) child.$scope = $scope;
 
-            linker.link(clone);
+            const link = compile(clone);
+
+            link($scope);
 
             return clone;
         };
 
     } else {
+
         const slots = Object.create(options);
 
         return function (target) {
 
-            target['@Transclude'] = function () {
+            const prototype = target.prototype;
+
+            prototype.compile = (compile => function transclude() {
+
                 this.content = document.createDocumentFragment();
+
                 for (let key of Object.keys(slots)) {
                     this.content.appendChild(slots[key] = this.querySelector(slots[key]));
                 }
                 for (let child = this.firstChild; child; child = this.firstChild) this.removeChild(child);
-            };
 
-            target.prototype.transclude = function ($scope, slot) {
+                compile.apply(this);
 
-                const linker = new Linker($scope);
+            })(prototype.compile);
+
+            prototype.transclude = function ($scope, slot) {
 
                 let clone;
                 if (slot) {
@@ -53,7 +60,9 @@ export function Transclude(options) {
                     for (let child = clone.firstChild; child; child = child.nextSibling) child.$scope = $scope;
                 }
 
-                linker.link(clone);
+                const link = compile(clone);
+
+                link($scope);
 
                 return clone;
             };

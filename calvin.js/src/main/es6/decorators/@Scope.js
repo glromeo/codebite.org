@@ -1,12 +1,10 @@
-export function Scope(options) {
+export function Scope(initial, isolated) {
 
-    if (options instanceof Function) {
+    return function (target) {
 
-        const target = options;
-        target['@Scope'] = true;
-
-    } else return function (target) {
-
-        target['@Scope'] = options;
+        target.prototype.assignScope = function () {
+            const parent = this.findProperty("$scope");
+            this.$scope = parent.$new(initial, isolated);
+        };
     }
 }

@@ -1,58 +1,59 @@
-import {appendCallback, closest} from "./utility";
-import {Linker} from "./linker";
+import {compile} from "./compiler";
+import {ScopeHandler} from "./observe-notify";
 
-const debug = true;
+const debug = false;
 
-export class PaperElement extends HTMLElement {
+export class PaperElement extends window.HTMLElement {
 
     constructor() {
         super();
-        debug && console.debug("created new PaperElement:", this.tagName);
 
-        for (let key of Object.keys(this.constructor)) {
-            const decorator = this.constructor[key];
-            if (decorator instanceof Function) {
-                decorator.apply(this, arguments);
-            }
+        if (this.firstChild) {
+            this.normalize();
+            this.compile();
         }
+
+        debug && console.debug("created new PaperElement:", this.tagName);
+    }
+
+    compile() {
+        debug && console.debug("compile:", this.tagName);
+        this.innerLink = compile(this);
+    }
+
+    innerLink($scope) {
+        this.normalize();
+        this.compile();
+        return this.innerLink($scope);
+    }
+
+    assignScope() {
+        this.$scope = this.findProperty("$scope");
+    }
+
+    link($scope) {
+        this.ready = this.innerLink($scope);
     }
 
     connectedCallback() {
+
         debug && console.debug("connected:", this.tagName);
 
-        return new Linker(this.findProperty("$scope")).link(this).then($scope => {
+        this.assignScope();
+
+        this.link(this.$scope);
+
+        this.ready.then(() => {
 
             debug && console.debug("linked:", this.tagName);
 
-            if (this.childrenReadyCallback) {
-                let barrier = 0;
-                let parent = this;
-
-                function descendantReadyCallback() {
-                    console.log("child ready:", this);
-                    if (!--barrier) {
-                        parent.childrenReadyCallback();
-                    }
-                }
-
-                const treeWalker = document.createTreeWalker(this, NodeFilter.SHOW_ELEMENT);
-                let element = treeWalker.nextNode();
-                while (element) if (element.render) {
-                    barrier++;
-                    debug && console.debug("waiting for node:", element);
-                    appendCallback(element, "readyCallback", descendantReadyCallback);
-                    element = treeWalker.nextSibling();
-                } else {
-                    element = treeWalker.nextNode();
-                }
-            }
-
             if (this.render) {
-                let promise = this.render($scope);
+                let promise = this.render(this.$scope);
                 if (promise) {
                     return promise.then(() => this.readyCallback());
                 }
             }
+
             this.readyCallback();
         });
     }
@@ -63,6 +64,7 @@ export class PaperElement extends HTMLElement {
 
     disconnectedCallback() {
         debug && console.debug("disconnected:", this.tagName);
+        delete this.$scope;
     }
 
     attributeChangedCallback(attrName, oldVal, newVal) {

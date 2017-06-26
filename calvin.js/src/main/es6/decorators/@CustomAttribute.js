@@ -1,7 +1,7 @@
 import customAttributes from 'custom-attributes/polyfill';
 import {dashCase} from "calvin/utility";
 
-export default function CustomAttribute(definition) {
+export function CustomAttribute(definition) {
     if (typeof definition === "string") {
         const name = definition;
         return function (definition) {

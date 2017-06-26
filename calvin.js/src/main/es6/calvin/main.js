@@ -1,13 +1,13 @@
 // import "calvin/custom-attributes";
 import "calvin/custom-elements";
 
-import {createScope} from "./scope";
+import {Scope} from "./scope";
 
 const debug = true;
 
 export function bootstrap(rootElement) {
 
-    createScope(rootElement, {}, true);
+    rootElement.$scope = new Scope({});
 
     const cleanUpObserver = new MutationObserver(function (mutations) {
         mutations.forEach(function (mutation) {
